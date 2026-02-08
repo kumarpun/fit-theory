@@ -14,6 +14,10 @@ const userSchema = {
     type: "VARCHAR(255)",
     required: true,
   },
+  role: {
+    type: "ENUM('user', 'admin')",
+    default: "user",
+  },
   isEnabled: {
     type: "BOOLEAN",
     default: true,

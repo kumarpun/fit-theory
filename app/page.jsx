@@ -1,93 +1,148 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getUser, clearTokens, refreshTokens } from "@/lib/auth-client";
+import { getUser, refreshTokens } from "@/lib/auth-client";
+import Navbar from "@/app/components/Navbar";
 
 export default function Home() {
-  const [user, setUser] = useState(null);
+  const router = useRouter();
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     const initAuth = async () => {
       let currentUser = getUser();
-
-      // Try to refresh tokens if user exists
       if (currentUser) {
         const refreshed = await refreshTokens();
-        if (refreshed) {
-          currentUser = refreshed.user;
-        } else {
-          currentUser = null;
-        }
+        if (!refreshed) currentUser = null;
       }
+      if (!currentUser) {
+        router.replace("/login");
+        return;
+      }
+      setAuthLoading(false);
+    };
+    initAuth();
+  }, [router]);
 
-      setUser(currentUser);
-      setLoading(false);
+  useEffect(() => {
+    if (authLoading) return;
+
+    const fetchProducts = async () => {
+      try {
+        const params = new URLSearchParams();
+        if (search) params.set("search", search);
+        if (category) params.set("category", category);
+        const res = await fetch(`/api/products?${params.toString()}`);
+        const data = await res.json();
+        if (data.success) {
+          setProducts(data.products);
+          if (!category && !search) {
+            const cats = [
+              ...new Set(
+                data.products
+                  .map((p) => p.category)
+                  .filter(Boolean)
+              ),
+            ];
+            setCategories(cats);
+          }
+        }
+      } catch (err) {
+        // Products will remain empty
+      } finally {
+        setLoading(false);
+      }
     };
 
-    initAuth();
-  }, []);
+    fetchProducts();
+  }, [authLoading, search, category]);
 
-  const handleLogout = () => {
-    clearTokens();
-    setUser(null);
-  };
-
-  if (loading) {
+  if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black">
-        <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+        <p className="text-zinc-500">Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black px-4">
-      <main className="text-center">
-        <h1 className="text-4xl font-bold mb-4 text-black dark:text-white">
-          Fit Theory
-        </h1>
+    <div className="min-h-screen bg-zinc-50">
+      <Navbar />
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold text-zinc-800 mb-6">Shop</h1>
 
-        {user ? (
-          <>
-            <p className="text-lg text-zinc-600 dark:text-zinc-400 mb-2">
-              Welcome back, {user.name}!
-            </p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-500 mb-8">
-              {user.email}
-            </p>
+        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+          />
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+          >
+            <option value="">All Categories</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        </div>
 
-            <button
-              onClick={handleLogout}
-              className="px-8 py-3 border border-red-500 text-red-500 rounded-full font-medium hover:bg-red-500 hover:text-white transition-colors"
-            >
-              Log Out
-            </button>
-          </>
+        {loading ? (
+          <p className="text-zinc-500">Loading products...</p>
+        ) : products.length === 0 ? (
+          <div className="bg-white p-8 rounded-lg shadow-md text-center">
+            <p className="text-zinc-500">No products found.</p>
+          </div>
         ) : (
-          <>
-            <p className="text-lg text-zinc-600 dark:text-zinc-400 mb-8">
-              Your fitness journey starts here
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {products.map((product) => (
               <Link
-                href="/login"
-                className="px-8 py-3 bg-black dark:bg-white text-white dark:text-black rounded-full font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
+                key={product.id}
+                href={`/products/${product.id}`}
+                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
               >
-                Log In
+                {product.imageUrl ? (
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    className="w-full h-48 object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-48 bg-zinc-100 flex items-center justify-center">
+                    <span className="text-zinc-400 text-sm">No image</span>
+                  </div>
+                )}
+                <div className="p-4">
+                  <h3 className="text-sm font-semibold text-zinc-800 mb-1">
+                    {product.name}
+                  </h3>
+                  {product.category && (
+                    <p className="text-xs text-zinc-500 mb-2">
+                      {product.category}
+                    </p>
+                  )}
+                  <p className="text-lg font-bold text-zinc-800">
+                    ${Number(product.price).toFixed(2)}
+                  </p>
+                </div>
               </Link>
-              <Link
-                href="/signup"
-                className="px-8 py-3 border border-black dark:border-white text-black dark:text-white rounded-full font-medium hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
-              >
-                Sign Up
-              </Link>
-            </div>
-          </>
+            ))}
+          </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

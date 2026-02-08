@@ -2,38 +2,31 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
-export default function SignupPage() {
-  const router = useRouter();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
+export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/signup", {
+      const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ email }),
       });
 
       const data = await res.json();
 
       if (data.success) {
-        router.push("/login?registered=true");
+        setSuccess(data.message);
+        setEmail("");
       } else {
         setError(data.message);
       }
@@ -48,38 +41,31 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
       <div className="w-full max-w-md">
         <h1 className="text-3xl font-bold text-center mb-8 text-zinc-800">
-          Create Account
+          Forgot Password
         </h1>
 
         <form
           onSubmit={handleSubmit}
           className="bg-white p-8 rounded-lg shadow-md"
         >
+          {success && (
+            <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md text-sm">
+              {success}
+            </div>
+          )}
+
           {error && (
             <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
               {error}
             </div>
           )}
 
-          <div className="mb-4">
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium mb-2 text-zinc-700"
-            >
-              Name
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-            />
-          </div>
+          <p className="mb-4 text-sm text-zinc-500">
+            Enter your email address and we&apos;ll send you a link to reset
+            your password.
+          </p>
 
-          <div className="mb-4">
+          <div className="mb-6">
             <label
               htmlFor="email"
               className="block text-sm font-medium mb-2 text-zinc-700"
@@ -90,28 +76,9 @@ export default function SignupPage() {
               type="email"
               id="email"
               name="email"
-              value={formData.email}
-              onChange={handleChange}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-            />
-          </div>
-
-          <div className="mb-6">
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium mb-2 text-zinc-700"
-            >
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              minLength={6}
               className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
             />
           </div>
@@ -121,11 +88,11 @@ export default function SignupPage() {
             disabled={loading}
             className="w-full py-3 bg-zinc-700 text-white rounded-md font-medium hover:bg-zinc-600 transition-colors disabled:opacity-50"
           >
-            {loading ? "Creating account..." : "Sign Up"}
+            {loading ? "Sending..." : "Send Reset Link"}
           </button>
 
           <p className="mt-4 text-center text-sm text-zinc-500">
-            Already have an account?{" "}
+            Remember your password?{" "}
             <Link
               href="/login"
               className="text-zinc-800 font-medium hover:underline"

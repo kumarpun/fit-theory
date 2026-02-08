@@ -9,6 +9,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered");
+  const reset = searchParams.get("reset");
 
   const [formData, setFormData] = useState({
     email: "",
@@ -38,7 +39,11 @@ export default function LoginPage() {
       if (data.success) {
         // Store tokens and user data
         setTokens(data.accessToken, data.refreshToken, data.user);
-        router.push("/");
+        if (data.user.role === "admin") {
+          router.push("/admin");
+        } else {
+          router.push("/");
+        }
       } else {
         setError(data.message);
       }
@@ -50,24 +55,30 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black px-4">
+    <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
       <div className="w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center mb-8 text-black dark:text-white">
+        <h1 className="text-3xl font-bold text-center mb-8 text-zinc-800">
           Welcome Back
         </h1>
 
         <form
           onSubmit={handleSubmit}
-          className="bg-white dark:bg-zinc-900 p-8 rounded-lg shadow-md"
+          className="bg-white p-8 rounded-lg shadow-md"
         >
           {registered && (
-            <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-md text-sm">
+            <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md text-sm">
               Account created successfully! Please log in.
             </div>
           )}
 
+          {reset && (
+            <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md text-sm">
+              Password reset successful! Please log in with your new password.
+            </div>
+          )}
+
           {error && (
-            <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
               {error}
             </div>
           )}
@@ -75,7 +86,7 @@ export default function LoginPage() {
           <div className="mb-4">
             <label
               htmlFor="email"
-              className="block text-sm font-medium mb-2 text-zinc-700 dark:text-zinc-300"
+              className="block text-sm font-medium mb-2 text-zinc-700"
             >
               Email
             </label>
@@ -86,14 +97,14 @@ export default function LoginPage() {
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
             />
           </div>
 
-          <div className="mb-6">
+          <div className="mb-2">
             <label
               htmlFor="password"
-              className="block text-sm font-medium mb-2 text-zinc-700 dark:text-zinc-300"
+              className="block text-sm font-medium mb-2 text-zinc-700"
             >
               Password
             </label>
@@ -104,23 +115,32 @@ export default function LoginPage() {
               value={formData.password}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
             />
+          </div>
+
+          <div className="mb-6 text-right">
+            <Link
+              href="/forgot-password"
+              className="text-sm text-zinc-500 hover:text-zinc-800"
+            >
+              Forgot password?
+            </Link>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-black dark:bg-white text-white dark:text-black rounded-md font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50"
+            className="w-full py-3 bg-zinc-700 text-white rounded-md font-medium hover:bg-zinc-600 transition-colors disabled:opacity-50"
           >
             {loading ? "Logging in..." : "Log In"}
           </button>
 
-          <p className="mt-4 text-center text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="mt-4 text-center text-sm text-zinc-500">
             Don&apos;t have an account?{" "}
             <Link
               href="/signup"
-              className="text-black dark:text-white font-medium hover:underline"
+              className="text-zinc-800 font-medium hover:underline"
             >
               Sign up
             </Link>

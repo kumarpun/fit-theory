@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function SignupPage() {
+export default function ResetPasswordPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
     password: "",
+    confirmPassword: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,19 +23,25 @@ export default function SignupPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/signup", {
+      const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ token, password: formData.password }),
       });
 
       const data = await res.json();
 
       if (data.success) {
-        router.push("/login?registered=true");
+        router.push("/login?reset=true");
       } else {
         setError(data.message);
       }
@@ -44,11 +52,32 @@ export default function SignupPage() {
     }
   };
 
+  if (!token) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
+        <div className="w-full max-w-md text-center">
+          <h1 className="text-3xl font-bold mb-4 text-zinc-800">
+            Invalid Reset Link
+          </h1>
+          <p className="text-zinc-500 mb-4">
+            This password reset link is invalid or has expired.
+          </p>
+          <Link
+            href="/forgot-password"
+            className="text-zinc-800 font-medium hover:underline"
+          >
+            Request a new reset link
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
       <div className="w-full max-w-md">
         <h1 className="text-3xl font-bold text-center mb-8 text-zinc-800">
-          Create Account
+          Reset Password
         </h1>
 
         <form
@@ -63,46 +92,10 @@ export default function SignupPage() {
 
           <div className="mb-4">
             <label
-              htmlFor="name"
-              className="block text-sm font-medium mb-2 text-zinc-700"
-            >
-              Name
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-            />
-          </div>
-
-          <div className="mb-4">
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium mb-2 text-zinc-700"
-            >
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-            />
-          </div>
-
-          <div className="mb-6">
-            <label
               htmlFor="password"
               className="block text-sm font-medium mb-2 text-zinc-700"
             >
-              Password
+              New Password
             </label>
             <input
               type="password"
@@ -116,16 +109,35 @@ export default function SignupPage() {
             />
           </div>
 
+          <div className="mb-6">
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium mb-2 text-zinc-700"
+            >
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required
+              minLength={6}
+              className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+            />
+          </div>
+
           <button
             type="submit"
             disabled={loading}
             className="w-full py-3 bg-zinc-700 text-white rounded-md font-medium hover:bg-zinc-600 transition-colors disabled:opacity-50"
           >
-            {loading ? "Creating account..." : "Sign Up"}
+            {loading ? "Resetting..." : "Reset Password"}
           </button>
 
           <p className="mt-4 text-center text-sm text-zinc-500">
-            Already have an account?{" "}
+            Remember your password?{" "}
             <Link
               href="/login"
               className="text-zinc-800 font-medium hover:underline"
