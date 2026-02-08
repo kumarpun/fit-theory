@@ -118,7 +118,7 @@ export default function Home() {
                   <img
                     src={product.imageUrl}
                     alt={product.name}
-                    className="w-full h-48 object-cover"
+                    className="w-full h-48 object-cover object-top"
                   />
                 ) : (
                   <div className="w-full h-48 bg-zinc-100 flex items-center justify-center">

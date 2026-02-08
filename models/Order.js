@@ -6,7 +6,7 @@ const orderSchema = {
     required: true,
   },
   status: {
-    type: "ENUM('pending', 'confirmed', 'shipped', 'delivered', 'cancelled')",
+    type: "ENUM('pending', 'confirmed', 'shipped', 'delivered', 'cancelled', 'returned')",
     default: "pending",
   },
   total: {
@@ -15,6 +15,10 @@ const orderSchema = {
   },
   shippingName: {
     type: "VARCHAR(255)",
+    required: true,
+  },
+  shippingPhone: {
+    type: "VARCHAR(30)",
     required: true,
   },
   shippingAddress: {
@@ -27,11 +31,22 @@ const orderSchema = {
   },
   shippingState: {
     type: "VARCHAR(100)",
-    required: true,
   },
   shippingZip: {
     type: "VARCHAR(20)",
-    required: true,
+  },
+  cancellationReason: {
+    type: "VARCHAR(500)",
+  },
+  returnReason: {
+    type: "VARCHAR(500)",
+  },
+  paymentMethod: {
+    type: "ENUM('cod', 'online')",
+    default: "cod",
+  },
+  paymentScreenshot: {
+    type: "VARCHAR(500)",
   },
 };
 

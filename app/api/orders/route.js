@@ -30,7 +30,7 @@ export async function POST(request) {
     await Order.sync();
     await OrderItem.sync();
 
-    const { items, shippingName, shippingAddress, shippingCity, shippingState, shippingZip } =
+    const { items, shippingName, shippingPhone, shippingAddress, shippingCity, shippingState, shippingZip, paymentMethod, paymentScreenshot } =
       await request.json();
 
     if (!items || items.length === 0) {
@@ -40,9 +40,9 @@ export async function POST(request) {
       );
     }
 
-    if (!shippingName || !shippingAddress || !shippingCity || !shippingState || !shippingZip) {
+    if (!shippingName || !shippingPhone || !shippingAddress || !shippingCity) {
       return Response.json(
-        { success: false, message: "All shipping fields are required" },
+        { success: false, message: "Name, phone, address, and city are required" },
         { status: 400 }
       );
     }
@@ -87,9 +87,9 @@ export async function POST(request) {
 
       // Create order
       const [orderResult] = await connection.execute(
-        `INSERT INTO orders (userId, status, total, shippingName, shippingAddress, shippingCity, shippingState, shippingZip)
-         VALUES (?, 'pending', ?, ?, ?, ?, ?, ?)`,
-        [user.id, total.toFixed(2), shippingName, shippingAddress, shippingCity, shippingState, shippingZip]
+        `INSERT INTO orders (userId, status, total, shippingName, shippingPhone, shippingAddress, shippingCity, shippingState, shippingZip, paymentMethod, paymentScreenshot)
+         VALUES (?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [user.id, total.toFixed(2), shippingName, shippingPhone, shippingAddress, shippingCity, shippingState || null, shippingZip || null, paymentMethod || "cod", paymentMethod === "online" ? paymentScreenshot : null]
       );
       const orderId = orderResult.insertId;
 

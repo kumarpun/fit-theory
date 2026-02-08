@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { getUser, clearTokens, refreshTokens } from "@/lib/auth-client";
+import { getUser, clearTokens, refreshTokens, authFetch } from "@/lib/auth-client";
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [newOrderCount, setNewOrderCount] = useState(0);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -36,6 +37,27 @@ export default function AdminLayout({ children }) {
 
     checkAdmin();
   }, [router]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const fetchOrderCount = async () => {
+      try {
+        const res = await authFetch("/api/admin/orders");
+        const data = await res.json();
+        if (data.success) {
+          const active = data.orders.filter(
+            (o) => !["delivered", "cancelled", "returned"].includes(o.status)
+          ).length;
+          setNewOrderCount(active);
+        }
+      } catch (err) {
+        // Count will remain unchanged
+      }
+    };
+
+    fetchOrderCount();
+  }, [loading, pathname]);
 
   const handleLogout = () => {
     clearTokens();
@@ -74,13 +96,18 @@ export default function AdminLayout({ children }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`block px-4 py-3 rounded-md mb-1 text-sm font-medium transition-colors ${
+                className={`flex items-center justify-between px-4 py-3 rounded-md mb-1 text-sm font-medium transition-colors ${
                   isActive
                     ? "bg-zinc-100 text-zinc-800"
                     : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-800"
                 }`}
               >
                 {item.label}
+                {item.label === "Orders" && newOrderCount > 0 && (
+                  <span className="bg-yellow-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                    {newOrderCount}
+                  </span>
+                )}
               </Link>
             );
           })}

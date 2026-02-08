@@ -10,6 +10,7 @@ const statusColors = {
   shipped: "bg-indigo-100 text-indigo-700",
   delivered: "bg-green-100 text-green-700",
   cancelled: "bg-red-100 text-red-700",
+  returned: "bg-orange-100 text-orange-700",
 };
 
 export default function AdminOrdersPage() {

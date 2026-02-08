@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { authFetch } from "@/lib/auth-client";
 
 const statusColors = {
@@ -10,15 +10,19 @@ const statusColors = {
   shipped: "bg-indigo-100 text-indigo-700",
   delivered: "bg-green-100 text-green-700",
   cancelled: "bg-red-100 text-red-700",
+  returned: "bg-orange-100 text-orange-700",
 };
 
 export default function AdminOrderDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const [order, setOrder] = useState(null);
   const [items, setItems] = useState([]);
   const [status, setStatus] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -49,13 +53,21 @@ export default function AdminOrderDetailPage() {
       const res = await authFetch(`/api/admin/orders/${params.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({
+          status,
+          ...(status === "cancelled" ? { cancellationReason: cancelReason } : {}),
+        }),
       });
 
       const data = await res.json();
 
       if (data.success) {
-        setOrder({ ...order, status });
+        setOrder({
+          ...order,
+          status,
+          cancellationReason: status === "cancelled" ? cancelReason : null,
+        });
+        setCancelReason("");
         setMessage("Status updated successfully");
       } else {
         setMessage(data.message);
@@ -67,14 +79,43 @@ export default function AdminOrderDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this order? Stock will be restored.")) return;
+    setDeleting(true);
+    try {
+      const res = await authFetch(`/api/admin/orders/${params.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        router.push("/admin/orders");
+      } else {
+        alert(data.message || "Failed to delete order");
+      }
+    } catch (err) {
+      alert("Failed to delete order");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) return <p className="text-zinc-500">Loading order...</p>;
   if (!order) return <p className="text-zinc-500">Order not found.</p>;
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-zinc-800 mb-6">
-        Order #{order.id}
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-zinc-800">
+          Order #{order.id}
+        </h1>
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+        >
+          {deleting ? "Deleting..." : "Delete Order"}
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white p-6 rounded-lg shadow-md">
@@ -121,9 +162,10 @@ export default function AdminOrderDetailPage() {
           </h2>
           <div className="text-sm text-zinc-800 space-y-1">
             <p>{order.shippingName}</p>
+            <p className="text-zinc-500">{order.shippingPhone}</p>
             <p>{order.shippingAddress}</p>
             <p>
-              {order.shippingCity}, {order.shippingState} {order.shippingZip}
+              {order.shippingCity}{order.shippingState ? `, ${order.shippingState}` : ""}{order.shippingZip ? ` ${order.shippingZip}` : ""}
             </p>
           </div>
         </div>
@@ -144,10 +186,11 @@ export default function AdminOrderDetailPage() {
             <option value="shipped">Shipped</option>
             <option value="delivered">Delivered</option>
             <option value="cancelled">Cancelled</option>
+            <option value="returned">Returned</option>
           </select>
           <button
             onClick={handleStatusUpdate}
-            disabled={updating}
+            disabled={updating || (status === "cancelled" && !cancelReason.trim())}
             className="px-4 py-2 bg-zinc-700 text-white rounded-md text-sm font-medium hover:bg-zinc-600 transition-colors disabled:opacity-50"
           >
             {updating ? "Updating..." : "Update"}
@@ -156,7 +199,63 @@ export default function AdminOrderDetailPage() {
             <span className="text-sm text-green-700">{message}</span>
           )}
         </div>
+        {status === "cancelled" && (
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-zinc-700 mb-2">
+              Cancellation Reason *
+            </label>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              rows={3}
+              placeholder="Provide a reason for cancellation..."
+              className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+            />
+          </div>
+        )}
       </div>
+
+      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <h2 className="text-lg font-semibold text-zinc-800 mb-4">
+          Payment Info
+        </h2>
+        <div className="space-y-2 text-sm">
+          <p>
+            <span className="text-zinc-500">Method:</span>{" "}
+            <span className={`px-2 py-1 rounded-full text-xs capitalize ${order.paymentMethod === "online" ? "bg-blue-100 text-blue-700" : "bg-zinc-100 text-zinc-700"}`}>
+              {order.paymentMethod === "online" ? "Online Payment" : "Cash on Delivery"}
+            </span>
+          </p>
+          {order.paymentMethod === "online" && order.paymentScreenshot && (
+            <div>
+              <p className="text-zinc-500 mb-2">Payment Screenshot:</p>
+              <img
+                src={order.paymentScreenshot}
+                alt="Payment screenshot"
+                className="max-w-md max-h-96 object-contain border border-zinc-200 rounded-md"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {order.cancellationReason && (
+        <div className="bg-red-50 border border-red-200 p-6 rounded-lg mb-6">
+          <h2 className="text-sm font-semibold text-red-800 mb-2">
+            Cancellation Reason
+          </h2>
+          <p className="text-sm text-red-700">{order.cancellationReason}</p>
+        </div>
+      )}
+
+      {order.returnReason && (
+        <div className="bg-orange-50 border border-orange-200 p-6 rounded-lg mb-6">
+          <h2 className="text-sm font-semibold text-orange-800 mb-2">
+            Return Reason
+          </h2>
+          <p className="text-sm text-orange-700">{order.returnReason}</p>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <h2 className="text-lg font-semibold text-zinc-800 p-6 pb-0">

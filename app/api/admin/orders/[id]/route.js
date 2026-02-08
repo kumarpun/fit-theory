@@ -1,4 +1,4 @@
-import { query } from "@/lib/db";
+import { query, getConnection } from "@/lib/db";
 import Order from "@/models/Order";
 import { requireAdmin } from "@/lib/auth";
 
@@ -48,12 +48,19 @@ export async function PUT(request, { params }) {
     if (error) return error;
 
     const { id } = await params;
-    const { status } = await request.json();
+    const { status, cancellationReason } = await request.json();
 
-    const validStatuses = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
+    const validStatuses = ["pending", "confirmed", "shipped", "delivered", "cancelled", "returned"];
     if (!validStatuses.includes(status)) {
       return Response.json(
         { success: false, message: "Invalid status" },
+        { status: 400 }
+      );
+    }
+
+    if (status === "cancelled" && !cancellationReason) {
+      return Response.json(
+        { success: false, message: "Cancellation reason is required" },
         { status: 400 }
       );
     }
@@ -66,7 +73,14 @@ export async function PUT(request, { params }) {
       );
     }
 
-    const order = await Order.update(id, { status });
+    const updateData = { status };
+    if (status === "cancelled") {
+      updateData.cancellationReason = cancellationReason;
+    } else if (existing.status === "cancelled") {
+      updateData.cancellationReason = null;
+    }
+
+    const order = await Order.update(id, updateData);
 
     return Response.json({
       success: true,
@@ -76,6 +90,58 @@ export async function PUT(request, { params }) {
   } catch (error) {
     return Response.json(
       { success: false, message: "Failed to update order", error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    const { error } = requireAdmin(request);
+    if (error) return error;
+
+    const { id } = await params;
+    await Order.sync();
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return Response.json(
+        { success: false, message: "Order not found" },
+        { status: 404 }
+      );
+    }
+
+    const connection = await getConnection();
+    try {
+      await connection.beginTransaction();
+
+      const items = await query(
+        "SELECT productId, quantity FROM order_items WHERE orderId = ?",
+        [id]
+      );
+
+      for (const item of items) {
+        await connection.execute(
+          "UPDATE products SET stock = stock + ? WHERE id = ?",
+          [item.quantity, item.productId]
+        );
+      }
+
+      await connection.execute("DELETE FROM order_items WHERE orderId = ?", [id]);
+      await connection.execute("DELETE FROM orders WHERE id = ?", [id]);
+
+      await connection.commit();
+
+      return Response.json({ success: true, message: "Order deleted" });
+    } catch (txError) {
+      await connection.rollback();
+      throw txError;
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    return Response.json(
+      { success: false, message: "Failed to delete order", error: error.message },
       { status: 500 }
     );
   }

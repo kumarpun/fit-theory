@@ -10,9 +10,12 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const [cartCount, setCartCount] = useState(0);
-  const user = getUser();
+  const [user, setUser] = useState(null);
+  const [admin, setAdmin] = useState(false);
 
   useEffect(() => {
+    setUser(getUser());
+    setAdmin(isAdmin());
     setCartCount(getCartCount());
 
     const handleCartUpdate = () => setCartCount(getCartCount());
@@ -64,7 +67,7 @@ export default function Navbar() {
             )}
           </Link>
           {navLink("/orders", "Orders")}
-          {isAdmin() && navLink("/admin", "Admin")}
+          {admin && navLink("/admin", "Admin")}
 
           <div className="flex items-center gap-3 ml-2 pl-4 border-l border-zinc-200">
             <span className="text-sm text-zinc-500">{user?.name}</span>
