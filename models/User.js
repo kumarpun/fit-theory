@@ -12,7 +12,11 @@ const userSchema = {
   },
   password: {
     type: "VARCHAR(255)",
-    required: true,
+    default: null,
+  },
+  googleId: {
+    type: "VARCHAR(255)",
+    default: null,
   },
   role: {
     type: "ENUM('user', 'admin')",

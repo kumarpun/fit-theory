@@ -232,7 +232,7 @@ export default function ProductDetailPage() {
               {product.stock === 0
                 ? "Out of Stock"
                 : sizes.length > 0 && !selectedSize
-                ? "Select a Size"
+                ? "Add to Cart"
                 : added
                 ? "Added to Cart!"
                 : "Add to Cart"}

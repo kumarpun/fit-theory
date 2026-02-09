@@ -12,6 +12,7 @@ export default function CheckoutPage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState("");
   const [shipping, setShipping] = useState({
     name: "",
     phone: "",
@@ -73,7 +74,8 @@ export default function CheckoutPage() {
     setPlacing(true);
 
     if (paymentMethod === "online" && !paymentScreenshot) {
-      setError("Please upload your payment screenshot.");
+      setToast("Please upload your payment screenshot.");
+      setTimeout(() => setToast(""), 3000);
       setPlacing(false);
       return;
     }
@@ -141,6 +143,12 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-zinc-50">
       <Navbar />
+
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 bg-red-600 text-white px-4 py-3 rounded-lg shadow-lg text-sm font-medium animate-slide-in">
+          {toast}
+        </div>
+      )}
       <div className="max-w-4xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold text-zinc-800 mb-6">Checkout</h1>
 
@@ -278,7 +286,7 @@ export default function CheckoutPage() {
                 <div className="mb-4 p-4 bg-zinc-50 border border-zinc-200 rounded-md">
                   <p className="text-sm text-zinc-600 mb-3">Scan the QR code below to make payment:</p>
                   <img
-                    src="/qr.jpg"
+                    src="/qqr.jpg"
                     alt="Payment QR Code"
                     className="w-48 h-48 mx-auto object-contain border border-zinc-200 rounded-md"
                   />

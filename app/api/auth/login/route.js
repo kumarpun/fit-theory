@@ -25,6 +25,14 @@ export async function POST(request) {
       );
     }
 
+    // Google-only users don't have a password
+    if (!user.password) {
+      return Response.json(
+        { success: false, message: "This account uses Google sign-in. Please use the Google button to log in." },
+        { status: 400 }
+      );
+    }
+
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
 

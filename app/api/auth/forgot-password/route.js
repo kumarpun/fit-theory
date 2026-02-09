@@ -18,10 +18,8 @@ export async function POST(request) {
 
     if (user) {
       const resetToken = crypto.randomBytes(32).toString("hex");
-      const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000)
-        .toISOString()
-        .slice(0, 19)
-        .replace("T", " ");
+      const expiry = new Date(Date.now() + 60 * 60 * 1000);
+      const resetTokenExpiry = `${expiry.getFullYear()}-${String(expiry.getMonth() + 1).padStart(2, "0")}-${String(expiry.getDate()).padStart(2, "0")} ${String(expiry.getHours()).padStart(2, "0")}:${String(expiry.getMinutes()).padStart(2, "0")}:${String(expiry.getSeconds()).padStart(2, "0")}`;
 
       const hashedToken = crypto
         .createHash("sha256")

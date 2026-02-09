@@ -85,6 +85,32 @@ export async function GET() {
       results.push("Migrated existing imageUrl data to images column");
     }
 
+    // Migration 7: Add googleId column to users
+    const googleIdCols = await query("SHOW COLUMNS FROM users LIKE 'googleId'");
+    if (googleIdCols.length === 0) {
+      await query(
+        "ALTER TABLE users ADD COLUMN googleId VARCHAR(255) DEFAULT NULL AFTER password"
+      );
+      results.push("Added googleId column to users table");
+    }
+
+    // Migration 8: Make password nullable for Google-only users
+    await query("ALTER TABLE users MODIFY COLUMN password VARCHAR(255) DEFAULT NULL");
+    results.push("Made password column nullable");
+
+    // Migration 9: Add resetToken and resetTokenExpiry columns to users
+    const resetTokenCols = await query("SHOW COLUMNS FROM users LIKE 'resetToken'");
+    if (resetTokenCols.length === 0) {
+      await query("ALTER TABLE users ADD COLUMN resetToken VARCHAR(255) DEFAULT NULL");
+      results.push("Added resetToken column to users table");
+    }
+
+    const resetTokenExpiryCols = await query("SHOW COLUMNS FROM users LIKE 'resetTokenExpiry'");
+    if (resetTokenExpiryCols.length === 0) {
+      await query("ALTER TABLE users ADD COLUMN resetTokenExpiry DATETIME DEFAULT NULL");
+      results.push("Added resetTokenExpiry column to users table");
+    }
+
     return Response.json({
       success: true,
       message: results.length > 0 ? results.join("; ") : "All migrations already applied",

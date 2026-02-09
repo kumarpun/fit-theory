@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { getUser, clearTokens, isAdmin } from "@/lib/auth-client";
@@ -12,6 +12,8 @@ export default function Navbar() {
   const [cartCount, setCartCount] = useState(0);
   const [user, setUser] = useState(null);
   const [admin, setAdmin] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     setUser(getUser());
@@ -23,8 +25,19 @@ export default function Navbar() {
     return () => window.removeEventListener("cart-updated", handleCartUpdate);
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleLogout = () => {
     clearTokens();
+    window.dispatchEvent(new Event("cart-updated"));
     router.replace("/login");
   };
 
@@ -69,14 +82,34 @@ export default function Navbar() {
           {navLink("/orders", "Orders")}
           {admin && navLink("/admin", "Admin")}
 
-          <div className="flex items-center gap-3 ml-2 pl-4 border-l border-zinc-200">
-            <span className="text-sm text-zinc-500">{user?.name}</span>
+          <div className="relative ml-2 pl-4 border-l border-zinc-200" ref={dropdownRef}>
             <button
-              onClick={handleLogout}
-              className="text-sm text-red-500 hover:text-red-700 font-medium transition-colors"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="flex items-center gap-1 text-sm font-medium text-zinc-600 hover:text-zinc-800 transition-colors"
             >
-              Logout
+              {user?.name}
+              <svg className={`w-4 h-4 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
+
+            {dropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-zinc-200 rounded-lg shadow-lg py-1 z-50">
+                <Link
+                  href="/change-password"
+                  onClick={() => setDropdownOpen(false)}
+                  className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
+                >
+                  Change Password
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-zinc-50 transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

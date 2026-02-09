@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { setTokens } from "@/lib/auth-client";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,6 +40,7 @@ export default function LoginPage() {
       if (data.success) {
         // Store tokens and user data
         setTokens(data.accessToken, data.refreshToken, data.user);
+        window.dispatchEvent(new Event("cart-updated"));
         if (data.user.role === "admin") {
           router.push("/admin");
         } else {
@@ -49,6 +51,37 @@ export default function LoginPage() {
       }
     } catch (err) {
       setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setError("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: credentialResponse.credential }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setTokens(data.accessToken, data.refreshToken, data.user);
+        window.dispatchEvent(new Event("cart-updated"));
+        if (data.user.role === "admin") {
+          router.push("/admin");
+        } else {
+          router.push("/");
+        }
+      } else {
+        setError(data.message);
+      }
+    } catch (err) {
+      setError("Google sign-in failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -135,6 +168,22 @@ export default function LoginPage() {
           >
             {loading ? "Logging in..." : "Log In"}
           </button>
+
+          <div className="my-4 flex items-center gap-4">
+            <div className="flex-1 h-px bg-zinc-300" />
+            <span className="text-sm text-zinc-400">or</span>
+            <div className="flex-1 h-px bg-zinc-300" />
+          </div>
+
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError("Google sign-in failed")}
+              size="large"
+              text="signin_with"
+              shape="rectangular"
+            />
+          </div>
 
           <p className="mt-4 text-center text-sm text-zinc-500">
             Don&apos;t have an account?{" "}
