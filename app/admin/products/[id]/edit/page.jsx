@@ -11,12 +11,12 @@ export default function EditProductPage() {
     name: "",
     description: "",
     price: "",
-    imageUrl: "",
     category: "",
     size: "",
     stock: "0",
     isActive: true,
   });
+  const [images, setImages] = useState([""]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -32,12 +32,25 @@ export default function EditProductPage() {
             name: data.product.name || "",
             description: data.product.description || "",
             price: String(data.product.price),
-            imageUrl: data.product.imageUrl || "",
             category: data.product.category || "",
             size: data.product.size || "",
             stock: String(data.product.stock),
             isActive: data.product.isActive,
           });
+
+          // Parse images from JSON string or fallback to imageUrl
+          let parsedImages = [];
+          if (data.product.images) {
+            try {
+              parsedImages = JSON.parse(data.product.images);
+            } catch {
+              parsedImages = [];
+            }
+          }
+          if (parsedImages.length === 0 && data.product.imageUrl) {
+            parsedImages = [data.product.imageUrl];
+          }
+          setImages(parsedImages.length > 0 ? parsedImages : [""]);
         } else {
           setError("Product not found");
         }
@@ -57,12 +70,32 @@ export default function EditProductPage() {
     setFormData({ ...formData, [e.target.name]: value });
   };
 
+  const handleImageChange = (index, value) => {
+    const updated = [...images];
+    updated[index] = value;
+    setImages(updated);
+  };
+
+  const addImageField = () => {
+    if (images.length < 4) setImages([...images, ""]);
+  };
+
+  const removeImageField = (index) => {
+    if (images.length > 1) {
+      setImages(images.filter((_, i) => i !== index));
+    } else {
+      setImages([""]);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
+      const filteredImages = images.filter((url) => url.trim() !== "");
+
       const res = await authFetch(`/api/admin/products/${params.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -70,6 +103,7 @@ export default function EditProductPage() {
           ...formData,
           price: parseFloat(formData.price),
           stock: parseInt(formData.stock),
+          images: filteredImages,
         }),
       });
 
@@ -97,7 +131,7 @@ export default function EditProductPage() {
 
       <form
         onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-lg shadow-md"
+        className="bg-white p-4 sm:p-8 rounded-lg shadow-md"
       >
         {error && (
           <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
@@ -134,7 +168,7 @@ export default function EditProductPage() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div>
             <label htmlFor="price" className="block text-sm font-medium mb-2 text-zinc-700">
               Price *
@@ -168,21 +202,39 @@ export default function EditProductPage() {
         </div>
 
         <div className="mb-4">
-          <label htmlFor="imageUrl" className="block text-sm font-medium mb-2 text-zinc-700">
-            Image URL
+          <label className="block text-sm font-medium mb-2 text-zinc-700">
+            Images (up to 4)
           </label>
-          <input
-            type="url"
-            id="imageUrl"
-            name="imageUrl"
-            value={formData.imageUrl}
-            onChange={handleChange}
-            placeholder="https://example.com/image.jpg"
-            className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-          />
+          {images.map((url, index) => (
+            <div key={index} className="flex gap-2 mb-2">
+              <input
+                type="url"
+                value={url}
+                onChange={(e) => handleImageChange(index, e.target.value)}
+                placeholder={`Image URL ${index + 1}`}
+                className="flex-1 px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+              />
+              <button
+                type="button"
+                onClick={() => removeImageField(index)}
+                className="px-3 py-2 text-red-500 hover:text-red-700 text-sm transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+          {images.length < 4 && (
+            <button
+              type="button"
+              onClick={addImageField}
+              className="text-sm text-zinc-600 hover:text-zinc-800 font-medium transition-colors"
+            >
+              + Add another image
+            </button>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div>
             <label htmlFor="category" className="block text-sm font-medium mb-2 text-zinc-700">
               Category

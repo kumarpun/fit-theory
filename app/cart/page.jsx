@@ -121,7 +121,8 @@ export default function CartPage() {
                           item.quantity + 1
                         )
                       }
-                      className="w-8 h-8 border border-zinc-300 rounded text-zinc-800 hover:bg-zinc-100 text-sm transition-colors"
+                      disabled={item.stock && item.quantity >= item.stock}
+                      className="w-8 h-8 border border-zinc-300 rounded text-zinc-800 hover:bg-zinc-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       +
                     </button>

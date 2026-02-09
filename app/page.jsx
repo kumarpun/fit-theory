@@ -108,15 +108,26 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map((product) => (
+            {products.map((product) => {
+              // Parse first image from images JSON array, fallback to imageUrl
+              let firstImage = null;
+              if (product.images) {
+                try {
+                  const parsed = JSON.parse(product.images);
+                  if (Array.isArray(parsed) && parsed.length > 0) firstImage = parsed[0];
+                } catch {}
+              }
+              if (!firstImage && product.imageUrl) firstImage = product.imageUrl;
+
+              return (
               <Link
                 key={product.id}
                 href={`/products/${product.id}`}
                 className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
               >
-                {product.imageUrl ? (
+                {firstImage ? (
                   <img
-                    src={product.imageUrl}
+                    src={firstImage}
                     alt={product.name}
                     className="w-full h-48 object-cover object-top"
                   />
@@ -139,7 +150,8 @@ export default function Home() {
                   </p>
                 </div>
               </Link>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

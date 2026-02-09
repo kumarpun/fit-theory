@@ -43,6 +43,9 @@ export async function PUT(request, { params }) {
     }
 
     const data = await request.json();
+    if (data.images) {
+      data.images = JSON.stringify(data.images);
+    }
     const product = await Product.update(id, data);
 
     return Response.json({

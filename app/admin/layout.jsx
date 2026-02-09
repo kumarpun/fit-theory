@@ -12,6 +12,7 @@ export default function AdminLayout({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [newOrderCount, setNewOrderCount] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -59,6 +60,11 @@ export default function AdminLayout({ children }) {
     fetchOrderCount();
   }, [loading, pathname]);
 
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
   const handleLogout = () => {
     clearTokens();
     router.replace("/login");
@@ -80,10 +86,47 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className="min-h-screen flex">
-      <aside className="w-64 bg-white shadow-md flex flex-col fixed h-full">
-        <div className="p-6 border-b border-zinc-200">
-          <h1 className="text-xl font-bold text-zinc-800">Fit Theory</h1>
-          <p className="text-sm text-zinc-500">Admin Panel</p>
+      {/* Mobile header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white shadow-sm flex items-center justify-between px-4 h-14">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="w-10 h-10 flex items-center justify-center text-zinc-700"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <span className="text-sm font-bold text-zinc-800">Fit Theory Admin</span>
+        <div className="w-10" />
+      </div>
+
+      {/* Sidebar overlay (mobile) */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed h-full z-50 w-64 bg-white shadow-md flex flex-col transition-transform duration-200 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0`}
+      >
+        <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-zinc-800">Fit Theory</h1>
+            <p className="text-sm text-zinc-500">Admin Panel</p>
+          </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden w-8 h-8 flex items-center justify-center text-zinc-500 hover:text-zinc-800"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         <nav className="flex-1 p-4">
@@ -129,7 +172,7 @@ export default function AdminLayout({ children }) {
         </div>
       </aside>
 
-      <main className="ml-64 flex-1 bg-zinc-50 min-h-screen p-8">
+      <main className="md:ml-64 flex-1 bg-zinc-50 min-h-screen p-4 pt-18 md:p-8 md:pt-8">
         {children}
       </main>
     </div>

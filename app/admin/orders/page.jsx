@@ -44,59 +44,95 @@ export default function AdminOrdersPage() {
           <p className="text-zinc-500">No orders yet.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-zinc-100 text-zinc-700 text-sm font-medium">
-                <th className="text-left px-6 py-3">Order ID</th>
-                <th className="text-left px-6 py-3">Customer</th>
-                <th className="text-left px-6 py-3">Total</th>
-                <th className="text-left px-6 py-3">Status</th>
-                <th className="text-left px-6 py-3">Date</th>
-                <th className="text-right px-6 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order) => (
-                <tr
-                  key={order.id}
-                  className="border-b border-zinc-100 hover:bg-zinc-50"
-                >
-                  <td className="px-6 py-4 text-sm text-zinc-800">
-                    #{order.id}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-zinc-800">
-                    <p>{order.userName}</p>
-                    <p className="text-zinc-500 text-xs">{order.userEmail}</p>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-zinc-800">
-                    ${Number(order.total).toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs capitalize ${
-                        statusColors[order.status] || ""
-                      }`}
-                    >
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-zinc-500">
-                    {new Date(order.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-right">
-                    <Link
-                      href={`/admin/orders/${order.id}`}
-                      className="text-zinc-600 hover:text-zinc-800"
-                    >
-                      View
-                    </Link>
-                  </td>
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block bg-white rounded-lg shadow-md overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-zinc-100 text-zinc-700 text-sm font-medium">
+                  <th className="text-left px-6 py-3">Order ID</th>
+                  <th className="text-left px-6 py-3">Customer</th>
+                  <th className="text-left px-6 py-3">Total</th>
+                  <th className="text-left px-6 py-3">Status</th>
+                  <th className="text-left px-6 py-3">Date</th>
+                  <th className="text-right px-6 py-3">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {orders.map((order) => (
+                  <tr
+                    key={order.id}
+                    className="border-b border-zinc-100 hover:bg-zinc-50"
+                  >
+                    <td className="px-6 py-4 text-sm text-zinc-800">
+                      #{order.id}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-zinc-800">
+                      <p>{order.userName}</p>
+                      <p className="text-zinc-500 text-xs">{order.userEmail}</p>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-zinc-800">
+                      ${Number(order.total).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs capitalize ${
+                          statusColors[order.status] || ""
+                        }`}
+                      >
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-zinc-500">
+                      {new Date(order.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-right">
+                      <Link
+                        href={`/admin/orders/${order.id}`}
+                        className="text-zinc-600 hover:text-zinc-800"
+                      >
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {orders.map((order) => (
+              <Link
+                key={order.id}
+                href={`/admin/orders/${order.id}`}
+                className="block bg-white rounded-lg shadow-md p-4"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-800">Order #{order.id}</p>
+                    <p className="text-xs text-zinc-500">{order.userName}</p>
+                  </div>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs capitalize ${
+                      statusColors[order.status] || ""
+                    }`}
+                  >
+                    {order.status}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-zinc-800">
+                    ${Number(order.total).toFixed(2)}
+                  </span>
+                  <span className="text-xs text-zinc-500">
+                    {new Date(order.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

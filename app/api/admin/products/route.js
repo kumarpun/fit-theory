@@ -24,7 +24,7 @@ export async function POST(request) {
     if (error) return error;
 
     await Product.sync();
-    const { name, description, price, imageUrl, category, size, stock } =
+    const { name, description, price, images, category, size, stock } =
       await request.json();
 
     if (!name || !price) {
@@ -38,7 +38,7 @@ export async function POST(request) {
       name,
       description: description || null,
       price,
-      imageUrl: imageUrl || null,
+      images: images && images.length > 0 ? JSON.stringify(images) : null,
       category: category || null,
       size: size || null,
       stock: stock || 0,

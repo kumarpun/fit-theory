@@ -73,6 +73,18 @@ export async function GET() {
       results.push("Updated paymentScreenshot column to VARCHAR(500)");
     }
 
+    // Migration 6: Add images column to products + migrate imageUrl data
+    const imagesCols = await query("SHOW COLUMNS FROM products LIKE 'images'");
+    if (imagesCols.length === 0) {
+      await query("ALTER TABLE products ADD COLUMN images TEXT DEFAULT NULL AFTER imageUrl");
+      results.push("Added images column to products table");
+      // Migrate existing imageUrl data into images JSON array
+      await query(
+        "UPDATE products SET images = CONCAT('[\"', imageUrl, '\"]') WHERE imageUrl IS NOT NULL AND imageUrl != '' AND images IS NULL"
+      );
+      results.push("Migrated existing imageUrl data to images column");
+    }
+
     return Response.json({
       success: true,
       message: results.length > 0 ? results.join("; ") : "All migrations already applied",

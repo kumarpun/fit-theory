@@ -13,8 +13,8 @@ const productSchema = {
     type: "DECIMAL(10,2)",
     required: true,
   },
-  imageUrl: {
-    type: "VARCHAR(500)",
+  images: {
+    type: "TEXT",
     default: null,
   },
   category: {

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { getUser, refreshTokens } from "@/lib/auth-client";
 import { addToCart } from "@/lib/cart";
 import Navbar from "@/app/components/Navbar";
+import ImageLightbox from "@/app/components/ImageLightbox";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -15,6 +16,8 @@ export default function ProductDetailPage() {
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [mainImageIndex, setMainImageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -41,10 +44,7 @@ export default function ProductDetailPage() {
         const data = await res.json();
         if (data.success) {
           setProduct(data.product);
-          const sizes = data.product.size
-            ? data.product.size.split(",").map((s) => s.trim())
-            : [];
-          if (sizes.length > 0) setSelectedSize(sizes[0]);
+          // Don't auto-select size — user must choose
         }
       } catch (err) {
         // Product will remain null
@@ -55,6 +55,21 @@ export default function ProductDetailPage() {
 
     fetchProduct();
   }, [authLoading, params.id]);
+
+  // Parse images from JSON string, fallback to imageUrl
+  const getProductImages = () => {
+    if (!product) return [];
+    if (product.images) {
+      try {
+        const parsed = JSON.parse(product.images);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    if (product.imageUrl) return [product.imageUrl];
+    return [];
+  };
+
+  const productImages = product ? getProductImages() : [];
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -105,12 +120,39 @@ export default function ProductDetailPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
-            {product.imageUrl ? (
-              <img
-                src={product.imageUrl}
-                alt={product.name}
-                className="w-full rounded-lg shadow-md object-cover"
-              />
+            {productImages.length > 0 ? (
+              <>
+                {/* Main image */}
+                <img
+                  src={productImages[mainImageIndex]}
+                  alt={product.name}
+                  onClick={() => setLightboxOpen(true)}
+                  className="w-full rounded-lg shadow-md object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                />
+
+                {/* Thumbnails */}
+                {productImages.length > 1 && (
+                  <div className="flex gap-2 mt-3">
+                    {productImages.map((img, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setMainImageIndex(index)}
+                        className={`w-16 h-16 rounded-md overflow-hidden border-2 transition-colors ${
+                          mainImageIndex === index
+                            ? "border-zinc-700"
+                            : "border-zinc-200 hover:border-zinc-400"
+                        }`}
+                      >
+                        <img
+                          src={img}
+                          alt={`${product.name} ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             ) : (
               <div className="w-full h-96 bg-zinc-100 rounded-lg flex items-center justify-center">
                 <span className="text-zinc-400">No image</span>
@@ -184,11 +226,13 @@ export default function ProductDetailPage() {
 
             <button
               onClick={handleAddToCart}
-              disabled={product.stock === 0}
+              disabled={product.stock === 0 || (sizes.length > 0 && !selectedSize)}
               className="w-full px-6 py-3 bg-zinc-700 text-white rounded-md font-medium hover:bg-zinc-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {product.stock === 0
                 ? "Out of Stock"
+                : sizes.length > 0 && !selectedSize
+                ? "Select a Size"
                 : added
                 ? "Added to Cart!"
                 : "Add to Cart"}
@@ -202,6 +246,15 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Lightbox */}
+      {lightboxOpen && productImages.length > 0 && (
+        <ImageLightbox
+          images={productImages}
+          initialIndex={mainImageIndex}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </div>
   );
 }
