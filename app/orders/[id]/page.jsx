@@ -233,6 +233,22 @@ export default function OrderDetailPage() {
                   {new Date(order.created_at).toLocaleString()}
                 </span>
               </p>
+              {Number(order.deliveryCharge || 0) > 0 && (
+                <>
+                  <p>
+                    <span className="text-zinc-500">Subtotal:</span>{" "}
+                    <span className="text-zinc-800">
+                      ${(Number(order.total) - Number(order.deliveryCharge)).toFixed(2)}
+                    </span>
+                  </p>
+                  <p>
+                    <span className="text-zinc-500">Delivery:</span>{" "}
+                    <span className="text-zinc-800">
+                      ${Number(order.deliveryCharge).toFixed(2)}
+                    </span>
+                  </p>
+                </>
+              )}
               <p>
                 <span className="text-zinc-500">Total:</span>{" "}
                 <span className="text-zinc-800 font-semibold">

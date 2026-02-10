@@ -24,6 +24,7 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [paymentScreenshot, setPaymentScreenshot] = useState(null);
   const [screenshotPreview, setScreenshotPreview] = useState("");
+  const [deliveryCharge, setDeliveryCharge] = useState(0);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -49,9 +50,19 @@ export default function CheckoutPage() {
       return;
     }
     setCart(items);
+
+    const fetchDeliveryCharge = async () => {
+      try {
+        const res = await fetch("/api/settings/delivery-charge");
+        const data = await res.json();
+        if (data.success) setDeliveryCharge(data.deliveryCharge);
+      } catch (err) {}
+    };
+    fetchDeliveryCharge();
   }, [authLoading, router]);
 
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const grandTotal = subtotal + deliveryCharge;
 
   const handleChange = (e) => {
     setShipping({ ...shipping, [e.target.name]: e.target.value });
@@ -343,10 +354,20 @@ export default function CheckoutPage() {
                   </div>
                 ))}
               </div>
-              <div className="border-t border-zinc-200 mt-4 pt-4 flex justify-between">
+              <div className="border-t border-zinc-200 mt-4 pt-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-500">Subtotal</span>
+                  <span className="text-zinc-800">${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-500">Delivery Charge</span>
+                  <span className="text-zinc-800">${deliveryCharge.toFixed(2)}</span>
+                </div>
+              </div>
+              <div className="border-t border-zinc-200 mt-3 pt-4 flex justify-between">
                 <p className="text-lg font-bold text-zinc-800">Total</p>
                 <p className="text-lg font-bold text-zinc-800">
-                  ${total.toFixed(2)}
+                  ${grandTotal.toFixed(2)}
                 </p>
               </div>
             </div>

@@ -11,6 +11,7 @@ export default function CartPage() {
   const router = useRouter();
   const [cart, setCart] = useState([]);
   const [authLoading, setAuthLoading] = useState(true);
+  const [deliveryCharge, setDeliveryCharge] = useState(0);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -34,10 +35,21 @@ export default function CartPage() {
 
     const handleCartUpdate = () => setCart(getCart());
     window.addEventListener("cart-updated", handleCartUpdate);
+
+    const fetchDeliveryCharge = async () => {
+      try {
+        const res = await fetch("/api/settings/delivery-charge");
+        const data = await res.json();
+        if (data.success) setDeliveryCharge(data.deliveryCharge);
+      } catch (err) {}
+    };
+    fetchDeliveryCharge();
+
     return () => window.removeEventListener("cart-updated", handleCartUpdate);
   }, [authLoading]);
 
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const grandTotal = subtotal + (cart.length > 0 ? deliveryCharge : 0);
 
   if (authLoading) {
     return (
@@ -142,16 +154,28 @@ export default function CartPage() {
               ))}
             </div>
 
-            <div className="bg-white rounded-lg shadow-md p-6 flex items-center justify-between">
-              <p className="text-lg font-bold text-zinc-800">
-                Total: ${total.toFixed(2)}
-              </p>
-              <Link
-                href="/checkout"
-                className="px-6 py-3 bg-zinc-700 text-white rounded-md font-medium hover:bg-zinc-600 transition-colors"
-              >
-                Proceed to Checkout
-              </Link>
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between text-sm text-zinc-600">
+                  <span>Subtotal</span>
+                  <span>${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-zinc-600">
+                  <span>Delivery Charge</span>
+                  <span>${deliveryCharge.toFixed(2)}</span>
+                </div>
+              </div>
+              <div className="border-t border-zinc-200 pt-4 flex items-center justify-between">
+                <p className="text-lg font-bold text-zinc-800">
+                  Total: ${grandTotal.toFixed(2)}
+                </p>
+                <Link
+                  href="/checkout"
+                  className="px-6 py-3 bg-zinc-700 text-white rounded-md font-medium hover:bg-zinc-600 transition-colors"
+                >
+                  Proceed to Checkout
+                </Link>
+              </div>
             </div>
           </>
         )}

@@ -111,6 +111,29 @@ export async function GET() {
       results.push("Added resetTokenExpiry column to users table");
     }
 
+    // Migration 10: Create settings table
+    const settingsTables = await query("SHOW TABLES LIKE 'settings'");
+    if (settingsTables.length === 0) {
+      await query(
+        `CREATE TABLE settings (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          settingKey VARCHAR(100) NOT NULL UNIQUE,
+          value TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )`
+      );
+      await query("INSERT INTO settings (settingKey, value) VALUES ('deliveryCharge', '0')");
+      results.push("Created settings table with default deliveryCharge");
+    }
+
+    // Migration 11: Add deliveryCharge column to orders
+    const deliveryChargeCols = await query("SHOW COLUMNS FROM orders LIKE 'deliveryCharge'");
+    if (deliveryChargeCols.length === 0) {
+      await query("ALTER TABLE orders ADD COLUMN deliveryCharge DECIMAL(10,2) DEFAULT 0");
+      results.push("Added deliveryCharge column to orders table");
+    }
+
     return Response.json({
       success: true,
       message: results.length > 0 ? results.join("; ") : "All migrations already applied",

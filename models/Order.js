@@ -48,6 +48,10 @@ const orderSchema = {
   paymentScreenshot: {
     type: "VARCHAR(500)",
   },
+  deliveryCharge: {
+    type: "DECIMAL(10,2)",
+    default: 0,
+  },
 };
 
 const Order = new Model("orders", orderSchema);

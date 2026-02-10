@@ -2,6 +2,7 @@ import { getConnection } from "@/lib/db";
 import Product from "@/models/Product";
 import Order from "@/models/Order";
 import OrderItem from "@/models/OrderItem";
+import Setting from "@/models/Setting";
 import { requireAuth } from "@/lib/auth";
 
 export async function GET(request) {
@@ -80,6 +81,11 @@ export async function POST(request) {
       });
     }
 
+    // Fetch delivery charge
+    const deliveryChargeSetting = await Setting.findOne({ settingKey: "deliveryCharge" });
+    const deliveryCharge = deliveryChargeSetting ? Number(deliveryChargeSetting.value) : 0;
+    const grandTotal = total + deliveryCharge;
+
     // Use transaction for order creation
     const connection = await getConnection();
     try {
@@ -87,9 +93,9 @@ export async function POST(request) {
 
       // Create order
       const [orderResult] = await connection.execute(
-        `INSERT INTO orders (userId, status, total, shippingName, shippingPhone, shippingAddress, shippingCity, shippingState, shippingZip, paymentMethod, paymentScreenshot)
-         VALUES (?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [user.id, total.toFixed(2), shippingName, shippingPhone, shippingAddress, shippingCity, shippingState || null, shippingZip || null, paymentMethod || "cod", paymentMethod === "online" ? paymentScreenshot : null]
+        `INSERT INTO orders (userId, status, total, deliveryCharge, shippingName, shippingPhone, shippingAddress, shippingCity, shippingState, shippingZip, paymentMethod, paymentScreenshot)
+         VALUES (?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [user.id, grandTotal.toFixed(2), deliveryCharge.toFixed(2), shippingName, shippingPhone, shippingAddress, shippingCity, shippingState || null, shippingZip || null, paymentMethod || "cod", paymentMethod === "online" ? paymentScreenshot : null]
       );
       const orderId = orderResult.insertId;
 
