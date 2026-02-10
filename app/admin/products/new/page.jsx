@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authFetch } from "@/lib/auth-client";
 
@@ -11,12 +11,23 @@ export default function NewProductPage() {
     description: "",
     price: "",
     category: "",
-    size: "",
-    stock: "0",
   });
+  const [sizes, setSizes] = useState([{ size: "", stock: "" }]);
   const [images, setImages] = useState([""]);
+  const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await authFetch("/api/admin/categories");
+        const data = await res.json();
+        if (data.success) setCategories(data.categories);
+      } catch (err) {}
+    };
+    fetchCategories();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -40,6 +51,24 @@ export default function NewProductPage() {
     }
   };
 
+  const handleSizeChange = (index, field, value) => {
+    const updated = [...sizes];
+    updated[index] = { ...updated[index], [field]: value };
+    setSizes(updated);
+  };
+
+  const addSizeRow = () => {
+    setSizes([...sizes, { size: "", stock: "" }]);
+  };
+
+  const removeSizeRow = (index) => {
+    if (sizes.length > 1) {
+      setSizes(sizes.filter((_, i) => i !== index));
+    } else {
+      setSizes([{ size: "", stock: "" }]);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -54,8 +83,8 @@ export default function NewProductPage() {
         body: JSON.stringify({
           ...formData,
           price: parseFloat(formData.price),
-          stock: parseInt(formData.stock),
           images: filteredImages,
+          sizes: sizes.map((s) => ({ size: s.size, stock: Number(s.stock) || 0 })),
         }),
       });
 
@@ -134,18 +163,23 @@ export default function NewProductPage() {
             />
           </div>
           <div>
-            <label htmlFor="stock" className="block text-sm font-medium mb-2 text-zinc-700">
-              Stock
+            <label htmlFor="category" className="block text-sm font-medium mb-2 text-zinc-700">
+              Category
             </label>
-            <input
-              type="number"
-              id="stock"
-              name="stock"
-              value={formData.stock}
+            <select
+              id="category"
+              name="category"
+              value={formData.category}
               onChange={handleChange}
-              min="0"
               className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-            />
+            >
+              <option value="">Select category</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.name}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -182,35 +216,43 @@ export default function NewProductPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div>
-            <label htmlFor="category" className="block text-sm font-medium mb-2 text-zinc-700">
-              Category
-            </label>
-            <input
-              type="text"
-              id="category"
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              placeholder="e.g. Clothing, Supplements"
-              className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-            />
-          </div>
-          <div>
-            <label htmlFor="size" className="block text-sm font-medium mb-2 text-zinc-700">
-              Sizes
-            </label>
-            <input
-              type="text"
-              id="size"
-              name="size"
-              value={formData.size}
-              onChange={handleChange}
-              placeholder="e.g. S,M,L,XL"
-              className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-            />
-          </div>
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-2 text-zinc-700">
+            Sizes & Stock
+          </label>
+          {sizes.map((entry, index) => (
+            <div key={index} className="flex gap-2 mb-2 items-center">
+              <input
+                type="text"
+                value={entry.size}
+                onChange={(e) => handleSizeChange(index, "size", e.target.value)}
+                placeholder="Size (e.g. M, L, XL)"
+                className="flex-1 px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+              />
+              <input
+                type="number"
+                value={entry.stock}
+                onChange={(e) => handleSizeChange(index, "stock", e.target.value)}
+                placeholder="Stock"
+                min="0"
+                className="w-24 px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+              />
+              <button
+                type="button"
+                onClick={() => removeSizeRow(index)}
+                className="px-3 py-2 text-red-500 hover:text-red-700 text-sm transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addSizeRow}
+            className="text-sm text-zinc-600 hover:text-zinc-800 font-medium transition-colors"
+          >
+            + Add size
+          </button>
         </div>
 
         <div className="flex gap-4">

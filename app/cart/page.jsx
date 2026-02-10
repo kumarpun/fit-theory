@@ -122,9 +122,18 @@ export default function CartPage() {
                     >
                       -
                     </button>
-                    <span className="w-8 text-center text-sm text-zinc-800">
-                      {item.quantity}
-                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={item.quantity}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "");
+                        if (val === "") return;
+                        const num = Math.max(1, Math.min(item.stock || Infinity, Number(val)));
+                        updateCartItemQuantity(item.productId, item.size, num);
+                      }}
+                      className="w-10 text-center text-sm text-zinc-800 border border-zinc-300 rounded py-1 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                    />
                     <button
                       onClick={() =>
                         updateCartItemQuantity(

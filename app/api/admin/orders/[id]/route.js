@@ -116,15 +116,37 @@ export async function DELETE(request, { params }) {
       await connection.beginTransaction();
 
       const items = await query(
-        "SELECT productId, quantity FROM order_items WHERE orderId = ?",
+        "SELECT productId, quantity, size FROM order_items WHERE orderId = ?",
         [id]
       );
 
       for (const item of items) {
-        await connection.execute(
-          "UPDATE products SET stock = stock + ? WHERE id = ?",
-          [item.quantity, item.productId]
+        const [rows] = await connection.execute(
+          "SELECT sizes, stock FROM products WHERE id = ? FOR UPDATE",
+          [item.productId]
         );
+        const product = rows[0];
+        let sizesArr = [];
+        if (product && product.sizes) {
+          try { sizesArr = JSON.parse(product.sizes); } catch {}
+        }
+
+        if (sizesArr.length > 0) {
+          const sizeKey = item.size || "";
+          sizesArr = sizesArr.map((s) =>
+            s.size === sizeKey ? { ...s, stock: (Number(s.stock) || 0) + item.quantity } : s
+          );
+          const newTotal = sizesArr.reduce((sum, s) => sum + (Number(s.stock) || 0), 0);
+          await connection.execute(
+            "UPDATE products SET sizes = ?, stock = ? WHERE id = ?",
+            [JSON.stringify(sizesArr), newTotal, item.productId]
+          );
+        } else {
+          await connection.execute(
+            "UPDATE products SET stock = stock + ? WHERE id = ?",
+            [item.quantity, item.productId]
+          );
+        }
       }
 
       await connection.execute("DELETE FROM order_items WHERE orderId = ?", [id]);

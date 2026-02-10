@@ -12,43 +12,66 @@ export default function EditProductPage() {
     description: "",
     price: "",
     category: "",
-    size: "",
-    stock: "0",
     isActive: true,
   });
+  const [sizes, setSizes] = useState([{ size: "", stock: "" }]);
   const [images, setImages] = useState([""]);
+  const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
   useEffect(() => {
-    const fetchProduct = async () => {
+    const fetchData = async () => {
       try {
-        const res = await authFetch(`/api/admin/products/${params.id}`);
-        const data = await res.json();
+        const [prodRes, catRes] = await Promise.all([
+          authFetch(`/api/admin/products/${params.id}`),
+          authFetch("/api/admin/categories"),
+        ]);
+        const prodData = await prodRes.json();
+        const catData = await catRes.json();
 
-        if (data.success) {
+        if (catData.success) setCategories(catData.categories);
+
+        if (prodData.success) {
           setFormData({
-            name: data.product.name || "",
-            description: data.product.description || "",
-            price: String(data.product.price),
-            category: data.product.category || "",
-            size: data.product.size || "",
-            stock: String(data.product.stock),
-            isActive: data.product.isActive,
+            name: prodData.product.name || "",
+            description: prodData.product.description || "",
+            price: String(prodData.product.price),
+            category: prodData.product.category || "",
+            isActive: prodData.product.isActive,
           });
 
-          // Parse images from JSON string or fallback to imageUrl
-          let parsedImages = [];
-          if (data.product.images) {
+          // Parse sizes JSON
+          let parsedSizes = [];
+          if (prodData.product.sizes) {
             try {
-              parsedImages = JSON.parse(data.product.images);
-            } catch {
-              parsedImages = [];
+              parsedSizes = JSON.parse(prodData.product.sizes);
+            } catch {}
+          }
+          if (parsedSizes.length === 0) {
+            // Fallback from legacy size + stock
+            if (prodData.product.size) {
+              const sizeList = prodData.product.size.split(",").map((s) => s.trim()).filter(Boolean);
+              parsedSizes = sizeList.map((s, i) => ({
+                size: s,
+                stock: i === 0 ? prodData.product.stock || 0 : 0,
+              }));
+            } else {
+              parsedSizes = [{ size: "", stock: prodData.product.stock || 0 }];
             }
           }
-          if (parsedImages.length === 0 && data.product.imageUrl) {
-            parsedImages = [data.product.imageUrl];
+          setSizes(parsedSizes.map((s) => ({ ...s, stock: String(s.stock ?? 0) })));
+
+          // Parse images
+          let parsedImages = [];
+          if (prodData.product.images) {
+            try {
+              parsedImages = JSON.parse(prodData.product.images);
+            } catch {}
+          }
+          if (parsedImages.length === 0 && prodData.product.imageUrl) {
+            parsedImages = [prodData.product.imageUrl];
           }
           setImages(parsedImages.length > 0 ? parsedImages : [""]);
         } else {
@@ -61,7 +84,7 @@ export default function EditProductPage() {
       }
     };
 
-    fetchProduct();
+    fetchData();
   }, [params.id]);
 
   const handleChange = (e) => {
@@ -88,6 +111,24 @@ export default function EditProductPage() {
     }
   };
 
+  const handleSizeChange = (index, field, value) => {
+    const updated = [...sizes];
+    updated[index] = { ...updated[index], [field]: value };
+    setSizes(updated);
+  };
+
+  const addSizeRow = () => {
+    setSizes([...sizes, { size: "", stock: "" }]);
+  };
+
+  const removeSizeRow = (index) => {
+    if (sizes.length > 1) {
+      setSizes(sizes.filter((_, i) => i !== index));
+    } else {
+      setSizes([{ size: "", stock: "" }]);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -102,8 +143,8 @@ export default function EditProductPage() {
         body: JSON.stringify({
           ...formData,
           price: parseFloat(formData.price),
-          stock: parseInt(formData.stock),
           images: filteredImages,
+          sizes: sizes.map((s) => ({ size: s.size, stock: Number(s.stock) || 0 })),
         }),
       });
 
@@ -186,18 +227,23 @@ export default function EditProductPage() {
             />
           </div>
           <div>
-            <label htmlFor="stock" className="block text-sm font-medium mb-2 text-zinc-700">
-              Stock
+            <label htmlFor="category" className="block text-sm font-medium mb-2 text-zinc-700">
+              Category
             </label>
-            <input
-              type="number"
-              id="stock"
-              name="stock"
-              value={formData.stock}
+            <select
+              id="category"
+              name="category"
+              value={formData.category}
               onChange={handleChange}
-              min="0"
               className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-            />
+            >
+              <option value="">Select category</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.name}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -234,34 +280,43 @@ export default function EditProductPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label htmlFor="category" className="block text-sm font-medium mb-2 text-zinc-700">
-              Category
-            </label>
-            <input
-              type="text"
-              id="category"
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-            />
-          </div>
-          <div>
-            <label htmlFor="size" className="block text-sm font-medium mb-2 text-zinc-700">
-              Sizes
-            </label>
-            <input
-              type="text"
-              id="size"
-              name="size"
-              value={formData.size}
-              onChange={handleChange}
-              placeholder="e.g. S,M,L,XL"
-              className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-            />
-          </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2 text-zinc-700">
+            Sizes & Stock
+          </label>
+          {sizes.map((entry, index) => (
+            <div key={index} className="flex gap-2 mb-2 items-center">
+              <input
+                type="text"
+                value={entry.size}
+                onChange={(e) => handleSizeChange(index, "size", e.target.value)}
+                placeholder="Size (e.g. M, L, XL)"
+                className="flex-1 px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+              />
+              <input
+                type="number"
+                value={entry.stock}
+                onChange={(e) => handleSizeChange(index, "stock", e.target.value)}
+                placeholder="Stock"
+                min="0"
+                className="w-24 px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+              />
+              <button
+                type="button"
+                onClick={() => removeSizeRow(index)}
+                className="px-3 py-2 text-red-500 hover:text-red-700 text-sm transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addSizeRow}
+            className="text-sm text-zinc-600 hover:text-zinc-800 font-medium transition-colors"
+          >
+            + Add size
+          </button>
         </div>
 
         <div className="mb-6">

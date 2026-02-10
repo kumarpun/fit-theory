@@ -62,11 +62,29 @@ export async function POST(request) {
         );
       }
 
-      if (product.stock < item.quantity) {
-        return Response.json(
-          { success: false, message: `Insufficient stock for ${product.name}` },
-          { status: 400 }
-        );
+      // Per-size stock validation
+      let sizesArr = [];
+      if (product.sizes) {
+        try { sizesArr = JSON.parse(product.sizes); } catch {}
+      }
+
+      const sizeKey = item.size || "";
+      if (sizesArr.length > 0) {
+        const sizeEntry = sizesArr.find((s) => s.size === sizeKey);
+        const sizeStock = sizeEntry ? Number(sizeEntry.stock) || 0 : 0;
+        if (sizeStock < item.quantity) {
+          return Response.json(
+            { success: false, message: `Insufficient stock for ${product.name}${item.size ? ` (size ${item.size})` : ""}` },
+            { status: 400 }
+          );
+        }
+      } else {
+        if (product.stock < item.quantity) {
+          return Response.json(
+            { success: false, message: `Insufficient stock for ${product.name}` },
+            { status: 400 }
+          );
+        }
       }
 
       const lineTotal = Number(product.price) * item.quantity;
@@ -77,7 +95,7 @@ export async function POST(request) {
         quantity: item.quantity,
         price: product.price,
         size: item.size || null,
-        currentStock: product.stock,
+        sizesArr,
       });
     }
 
@@ -99,7 +117,7 @@ export async function POST(request) {
       );
       const orderId = orderResult.insertId;
 
-      // Create order items and decrement stock
+      // Create order items and decrement per-size stock
       for (const item of validatedItems) {
         await connection.execute(
           `INSERT INTO order_items (orderId, productId, quantity, price, size)
@@ -107,10 +125,33 @@ export async function POST(request) {
           [orderId, item.productId, item.quantity, item.price, item.size]
         );
 
-        await connection.execute(
-          `UPDATE products SET stock = stock - ? WHERE id = ?`,
-          [item.quantity, item.productId]
+        // Re-read product with lock for safe stock update
+        const [rows] = await connection.execute(
+          `SELECT sizes, stock FROM products WHERE id = ? FOR UPDATE`,
+          [item.productId]
         );
+        const current = rows[0];
+        let updatedSizes = [];
+        if (current.sizes) {
+          try { updatedSizes = JSON.parse(current.sizes); } catch {}
+        }
+
+        const sizeKey = item.size || "";
+        if (updatedSizes.length > 0) {
+          updatedSizes = updatedSizes.map((s) =>
+            s.size === sizeKey ? { ...s, stock: Math.max(0, (Number(s.stock) || 0) - item.quantity) } : s
+          );
+          const newTotal = updatedSizes.reduce((sum, s) => sum + (Number(s.stock) || 0), 0);
+          await connection.execute(
+            `UPDATE products SET sizes = ?, stock = ? WHERE id = ?`,
+            [JSON.stringify(updatedSizes), newTotal, item.productId]
+          );
+        } else {
+          await connection.execute(
+            `UPDATE products SET stock = stock - ? WHERE id = ?`,
+            [item.quantity, item.productId]
+          );
+        }
       }
 
       await connection.commit();

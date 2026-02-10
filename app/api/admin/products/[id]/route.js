@@ -46,6 +46,12 @@ export async function PUT(request, { params }) {
     if (data.images) {
       data.images = JSON.stringify(data.images);
     }
+    if (data.sizes && Array.isArray(data.sizes)) {
+      const sizesArr = data.sizes;
+      data.stock = sizesArr.reduce((sum, s) => sum + (Number(s.stock) || 0), 0);
+      data.size = sizesArr.map((s) => s.size).filter(Boolean).join(", ") || null;
+      data.sizes = JSON.stringify(sizesArr);
+    }
     const product = await Product.update(id, data);
 
     return Response.json({

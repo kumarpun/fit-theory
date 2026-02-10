@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getUser, refreshTokens } from "@/lib/auth-client";
-import { addToCart } from "@/lib/cart";
+import { addToCart, getStockForSize } from "@/lib/cart";
 import Navbar from "@/app/components/Navbar";
 import ImageLightbox from "@/app/components/ImageLightbox";
 
@@ -71,12 +71,32 @@ export default function ProductDetailPage() {
 
   const productImages = product ? getProductImages() : [];
 
+  // Parse sizes JSON for per-size stock
+  const getSizesArray = () => {
+    if (!product) return [];
+    if (product.sizes) {
+      try {
+        const parsed = JSON.parse(product.sizes);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {}
+    }
+    // Fallback from legacy size + stock
+    if (product.size) {
+      return product.size.split(",").map((s) => s.trim()).filter(Boolean).map((s) => ({ size: s, stock: Number(product.stock) || 0 }));
+    }
+    return [];
+  };
+
+  const sizesArray = product ? getSizesArray() : [];
+  const hasSizes = sizesArray.length > 0 && sizesArray.some((s) => s.size !== "");
+
+  const selectedStock = hasSizes
+    ? (sizesArray.find((s) => s.size === selectedSize)?.stock ?? 0)
+    : getStockForSize(product, null);
+
   const handleAddToCart = () => {
     if (!product) return;
-    const sizes = product.size
-      ? product.size.split(",").map((s) => s.trim())
-      : [];
-    addToCart(product, sizes.length > 0 ? selectedSize : null, quantity);
+    addToCart(product, hasSizes ? selectedSize : null, quantity);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
@@ -103,9 +123,9 @@ export default function ProductDetailPage() {
     );
   }
 
-  const sizes = product.size
-    ? product.size.split(",").map((s) => s.trim())
-    : [];
+  const totalStock = sizesArray.length > 0
+    ? sizesArray.reduce((sum, s) => sum + (Number(s.stock) || 0), 0)
+    : Number(product.stock) || 0;
 
   return (
     <div className="min-h-screen bg-zinc-50">
@@ -177,25 +197,35 @@ export default function ProductDetailPage() {
               </p>
             )}
 
-            {sizes.length > 0 && (
+            {hasSizes && (
               <div className="mb-6">
                 <label className="block text-sm font-medium text-zinc-700 mb-2">
                   Size
                 </label>
-                <div className="flex gap-2">
-                  {sizes.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`px-4 py-2 border rounded-md text-sm font-medium transition-colors ${
-                        selectedSize === size
-                          ? "bg-zinc-700 text-white border-zinc-700"
-                          : "bg-white text-zinc-800 border-zinc-300 hover:border-zinc-500"
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap gap-2">
+                  {sizesArray.filter((s) => s.size !== "").map((s) => {
+                    const sizeStock = Number(s.stock) || 0;
+                    const isOut = sizeStock === 0;
+                    return (
+                      <button
+                        key={s.size}
+                        onClick={() => {
+                          setSelectedSize(s.size);
+                          setQuantity(1);
+                        }}
+                        disabled={isOut}
+                        className={`px-4 py-2 border rounded-md text-sm font-medium transition-colors ${
+                          selectedSize === s.size
+                            ? "bg-zinc-700 text-white border-zinc-700"
+                            : isOut
+                            ? "bg-zinc-100 text-zinc-400 border-zinc-200 cursor-not-allowed line-through"
+                            : "bg-white text-zinc-800 border-zinc-300 hover:border-zinc-500"
+                        }`}
+                      >
+                        {s.size}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -211,12 +241,21 @@ export default function ProductDetailPage() {
                 >
                   -
                 </button>
-                <span className="w-12 text-center text-zinc-800 font-medium">
-                  {quantity}
-                </span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={quantity}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "");
+                    if (val === "") return setQuantity(1);
+                    const num = Math.max(1, Math.min(selectedStock, Number(val)));
+                    setQuantity(num);
+                  }}
+                  className="w-12 text-center text-zinc-800 font-medium border border-zinc-300 rounded-md py-1 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                />
                 <button
-                  onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                  disabled={quantity >= product.stock}
+                  onClick={() => setQuantity(Math.min(selectedStock, quantity + 1))}
+                  disabled={quantity >= selectedStock}
                   className="w-10 h-10 border border-zinc-300 rounded-md text-zinc-800 hover:bg-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   +
@@ -226,21 +265,25 @@ export default function ProductDetailPage() {
 
             <button
               onClick={handleAddToCart}
-              disabled={product.stock === 0 || (sizes.length > 0 && !selectedSize)}
+              disabled={selectedStock === 0 || (hasSizes && !selectedSize)}
               className="w-full px-6 py-3 bg-zinc-700 text-white rounded-md font-medium hover:bg-zinc-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {product.stock === 0
+              {totalStock === 0
                 ? "Out of Stock"
-                : sizes.length > 0 && !selectedSize
-                ? "Add to Cart"
+                : hasSizes && !selectedSize
+                ? "Select a Size"
+                : selectedStock === 0
+                ? "Out of Stock"
                 : added
                 ? "Added to Cart!"
                 : "Add to Cart"}
             </button>
 
             <p className="text-xs text-zinc-500 mt-3">
-              {product.stock > 0
-                ? `${product.stock} in stock`
+              {hasSizes && selectedSize
+                ? `${selectedStock} in stock for size ${selectedSize}`
+                : totalStock > 0
+                ? `${totalStock} total in stock`
                 : "Currently unavailable"}
             </p>
           </div>

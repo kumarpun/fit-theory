@@ -29,6 +29,10 @@ const productSchema = {
     type: "INT",
     default: 0,
   },
+  sizes: {
+    type: "TEXT",
+    default: null,
+  },
   isActive: {
     type: "BOOLEAN",
     default: true,

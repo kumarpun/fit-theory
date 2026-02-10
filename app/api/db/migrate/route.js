@@ -134,6 +134,50 @@ export async function GET() {
       results.push("Added deliveryCharge column to orders table");
     }
 
+    // Migration 12: Create categories table and seed from existing product categories
+    const categoriesTables = await query("SHOW TABLES LIKE 'categories'");
+    if (categoriesTables.length === 0) {
+      await query(
+        `CREATE TABLE categories (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(100) NOT NULL UNIQUE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )`
+      );
+      results.push("Created categories table");
+      const existingCats = await query(
+        "SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != ''"
+      );
+      for (const row of existingCats) {
+        await query("INSERT IGNORE INTO categories (name) VALUES (?)", [row.category]);
+      }
+      if (existingCats.length > 0) {
+        results.push(`Seeded ${existingCats.length} categories from existing products`);
+      }
+    }
+
+    // Migration 13: Add sizes column to products and migrate size+stock data
+    const sizesCols = await query("SHOW COLUMNS FROM products LIKE 'sizes'");
+    if (sizesCols.length === 0) {
+      await query("ALTER TABLE products ADD COLUMN sizes TEXT DEFAULT NULL AFTER stock");
+      results.push("Added sizes column to products table");
+      const allProducts = await query("SELECT id, size, stock FROM products");
+      for (const p of allProducts) {
+        let sizesJson;
+        if (p.size && p.size.trim() !== "") {
+          const sizeList = p.size.split(",").map(s => s.trim()).filter(Boolean);
+          sizesJson = JSON.stringify(
+            sizeList.map((s, i) => ({ size: s, stock: i === 0 ? (p.stock || 0) : 0 }))
+          );
+        } else {
+          sizesJson = JSON.stringify([{ size: "", stock: p.stock || 0 }]);
+        }
+        await query("UPDATE products SET sizes = ? WHERE id = ?", [sizesJson, p.id]);
+      }
+      results.push("Migrated existing size+stock data into sizes JSON column");
+    }
+
     return Response.json({
       success: true,
       message: results.length > 0 ? results.join("; ") : "All migrations already applied",
