@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getUser, refreshTokens, authFetch } from "@/lib/auth-client";
 import { getCart, clearCart } from "@/lib/cart";
 import Navbar from "@/app/components/Navbar";
+import Footer from "@/app/components/Footer";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -374,6 +375,7 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

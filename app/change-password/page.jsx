@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authFetch } from "@/lib/auth-client";
 import Navbar from "@/app/components/Navbar";
+import Footer from "@/app/components/Footer";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -137,6 +138,7 @@ export default function ChangePasswordPage() {
           </button>
         </form>
       </div>
+      <Footer />
     </div>
   );
 }

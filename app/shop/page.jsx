@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getUser, refreshTokens } from "@/lib/auth-client";
 import Navbar from "@/app/components/Navbar";
+import Footer from "@/app/components/Footer";
 
 export default function ShopPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.get("search") || "");
   const [category, setCategory] = useState("");
   const [categories, setCategories] = useState([]);
 
@@ -207,6 +209,7 @@ export default function ShopPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

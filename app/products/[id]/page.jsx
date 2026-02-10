@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { getUser, refreshTokens } from "@/lib/auth-client";
 import { addToCart, getStockForSize } from "@/lib/cart";
 import Navbar from "@/app/components/Navbar";
+import Footer from "@/app/components/Footer";
 import ImageLightbox from "@/app/components/ImageLightbox";
 
 export default function ProductDetailPage() {
@@ -298,6 +299,7 @@ export default function ProductDetailPage() {
           onClose={() => setLightboxOpen(false)}
         />
       )}
+      <Footer />
     </div>
   );
 }

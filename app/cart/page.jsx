@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getUser, refreshTokens } from "@/lib/auth-client";
 import { getCart, removeFromCart, updateCartItemQuantity, getCartTotal } from "@/lib/cart";
 import Navbar from "@/app/components/Navbar";
+import Footer from "@/app/components/Footer";
 
 export default function CartPage() {
   const router = useRouter();
@@ -60,9 +61,9 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50">
+    <div className="min-h-screen bg-zinc-50 flex flex-col">
       <Navbar />
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-8 flex-1 w-full">
         <h1 className="text-2xl font-bold text-zinc-800 mb-6">Your Cart</h1>
 
         {cart.length === 0 ? (
@@ -189,6 +190,7 @@ export default function CartPage() {
           </>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

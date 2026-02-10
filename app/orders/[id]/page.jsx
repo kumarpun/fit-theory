@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getUser, refreshTokens, authFetch } from "@/lib/auth-client";
 import Navbar from "@/app/components/Navbar";
+import Footer from "@/app/components/Footer";
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-700",
@@ -317,6 +318,7 @@ export default function OrderDetailPage() {
           </table>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
