@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { getUser, refreshTokens } from "@/lib/auth-client";
 import { addToCart, getStockForSize } from "@/lib/cart";
 import Navbar from "@/app/components/Navbar";
@@ -19,6 +20,7 @@ export default function ProductDetailPage() {
   const [added, setAdded] = useState(false);
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [relatedProducts, setRelatedProducts] = useState([]);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -46,6 +48,21 @@ export default function ProductDetailPage() {
         if (data.success) {
           setProduct(data.product);
           // Don't auto-select size — user must choose
+
+          // Fetch related products from same category
+          if (data.product.category) {
+            try {
+              const relRes = await fetch(`/api/products?category=${encodeURIComponent(data.product.category)}`);
+              const relData = await relRes.json();
+              if (relData.success) {
+                setRelatedProducts(
+                  relData.products
+                    .filter((p) => p.id !== data.product.id)
+                    .slice(0, 4)
+                );
+              }
+            } catch {}
+          }
         }
       } catch (err) {
         // Product will remain null
@@ -290,6 +307,53 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Related Products */}
+      {relatedProducts.length > 0 && (
+        <div className="max-w-6xl mx-auto px-4 py-8 border-t border-zinc-200 mt-8">
+          <h2 className="text-xl font-bold text-zinc-800 mb-6">Related Products</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {relatedProducts.map((rp) => {
+              let firstImage = null;
+              if (rp.images) {
+                try {
+                  const parsed = JSON.parse(rp.images);
+                  if (Array.isArray(parsed) && parsed.length > 0) firstImage = parsed[0];
+                } catch {}
+              }
+              if (!firstImage && rp.imageUrl) firstImage = rp.imageUrl;
+
+              return (
+                <Link
+                  key={rp.id}
+                  href={`/products/${rp.id}`}
+                  className="group"
+                >
+                  <div className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                    {firstImage ? (
+                      <img
+                        src={firstImage}
+                        alt={rp.name}
+                        className="w-full h-70 object-cover object-top"
+                      />
+                    ) : (
+                      <div className="w-full h-70 bg-zinc-100 flex items-center justify-center">
+                        <span className="text-zinc-400 text-sm">No image</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3">
+                    <h3 className="text-sm font-semibold text-zinc-800">{rp.name}</h3>
+                    <p className="text-lg font-bold text-zinc-800 mt-1">
+                      ${Number(rp.price).toFixed(2)}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Lightbox */}
       {lightboxOpen && productImages.length > 0 && (

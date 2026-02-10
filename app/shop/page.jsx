@@ -175,29 +175,31 @@ export default function ShopPage() {
                     <Link
                       key={product.id}
                       href={`/products/${product.id}`}
-                      className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                      className="group"
                     >
-                      {firstImage ? (
-                        <img
-                          src={firstImage}
-                          alt={product.name}
-                          className="w-full h-48 object-cover object-top"
-                        />
-                      ) : (
-                        <div className="w-full h-48 bg-zinc-100 flex items-center justify-center">
-                          <span className="text-zinc-400 text-sm">No image</span>
-                        </div>
-                      )}
-                      <div className="p-4">
-                        <h3 className="text-sm font-semibold text-zinc-800 mb-1">
+                      <div className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                        {firstImage ? (
+                          <img
+                            src={firstImage}
+                            alt={product.name}
+                            className="w-full h-80 object-cover object-top"
+                          />
+                        ) : (
+                          <div className="w-full h-80 bg-zinc-100 flex items-center justify-center">
+                            <span className="text-zinc-400 text-sm">No image</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-3">
+                        <h3 className="text-sm font-semibold text-zinc-800">
                           {product.name}
                         </h3>
                         {product.category && (
-                          <p className="text-xs text-zinc-500 mb-2">
+                          <p className="text-xs text-zinc-500 mt-1">
                             {product.category}
                           </p>
                         )}
-                        <p className="text-lg font-bold text-zinc-800">
+                        <p className="text-lg font-bold text-zinc-800 mt-1">
                           ${Number(product.price).toFixed(2)}
                         </p>
                       </div>
