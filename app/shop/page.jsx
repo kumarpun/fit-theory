@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getUser, refreshTokens } from "@/lib/auth-client";
@@ -8,6 +8,14 @@ import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
 
 export default function ShopPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-zinc-50"><p className="text-zinc-500">Loading...</p></div>}>
+      <ShopContent />
+    </Suspense>
+  );
+}
+
+function ShopContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [products, setProducts] = useState([]);
