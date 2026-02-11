@@ -20,10 +20,10 @@ export default function AdminLayout({ children }) {
 
       if (currentUser) {
         const refreshed = await refreshTokens();
-        if (refreshed) {
-          currentUser = refreshed.user;
-        } else {
+        if (!refreshed) {
           currentUser = null;
+        } else if (refreshed.user) {
+          currentUser = refreshed.user;
         }
       }
 
