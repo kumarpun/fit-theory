@@ -81,10 +81,11 @@ function LoginContent() {
         setTokens(data.accessToken, data.refreshToken, data.user);
         window.dispatchEvent(new Event("cart-updated"));
         if (data.user.role === "admin") {
-          router.push("/admin");
+          window.location.href = "/admin";
         } else {
-          router.push("/");
+          window.location.href = "/";
         }
+        return;
       } else {
         setError(data.message);
       }
