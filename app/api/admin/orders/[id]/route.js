@@ -26,7 +26,7 @@ export async function GET(request, { params }) {
     }
 
     const items = await query(
-      `SELECT order_items.*, products.name as productName, products.imageUrl
+      `SELECT order_items.*, products.name as productName, products.images
        FROM order_items
        JOIN products ON order_items.productId = products.id
        WHERE order_items.orderId = ?`,
