@@ -81,7 +81,7 @@ export default function CartPage() {
             <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
               {cart.map((item, i) => (
                 <div
-                  key={`${item.productId}-${item.size}`}
+                  key={`${item.productId}-${item.size}-${item.color}`}
                   className={`flex items-center gap-4 p-4 ${
                     i > 0 ? "border-t border-zinc-100" : ""
                   }`}
@@ -99,9 +99,15 @@ export default function CartPage() {
                   )}
 
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-zinc-800 truncate">
+                    <Link
+                      href={`/products/${item.productId}`}
+                      className="text-sm font-semibold text-zinc-800 truncate hover:underline block"
+                    >
                       {item.name}
-                    </p>
+                    </Link>
+                    {item.color && (
+                      <p className="text-xs text-zinc-500">Color: {item.color}</p>
+                    )}
                     {item.size && (
                       <p className="text-xs text-zinc-500">Size: {item.size}</p>
                     )}
@@ -116,7 +122,8 @@ export default function CartPage() {
                         updateCartItemQuantity(
                           item.productId,
                           item.size,
-                          item.quantity - 1
+                          item.quantity - 1,
+                          item.color
                         )
                       }
                       className="w-8 h-8 border border-zinc-300 rounded text-zinc-800 hover:bg-zinc-100 text-sm transition-colors"
@@ -131,7 +138,7 @@ export default function CartPage() {
                         const val = e.target.value.replace(/\D/g, "");
                         if (val === "") return;
                         const num = Math.max(1, Math.min(item.stock || Infinity, Number(val)));
-                        updateCartItemQuantity(item.productId, item.size, num);
+                        updateCartItemQuantity(item.productId, item.size, num, item.color);
                       }}
                       className="w-10 text-center text-sm text-zinc-800 border border-zinc-300 rounded py-1 focus:outline-none focus:ring-2 focus:ring-zinc-400"
                     />
@@ -140,7 +147,8 @@ export default function CartPage() {
                         updateCartItemQuantity(
                           item.productId,
                           item.size,
-                          item.quantity + 1
+                          item.quantity + 1,
+                          item.color
                         )
                       }
                       disabled={item.stock && item.quantity >= item.stock}
@@ -155,7 +163,7 @@ export default function CartPage() {
                   </p>
 
                   <button
-                    onClick={() => removeFromCart(item.productId, item.size)}
+                    onClick={() => removeFromCart(item.productId, item.size, item.color)}
                     className="text-red-500 hover:text-red-700 text-sm transition-colors"
                   >
                     Remove

@@ -117,6 +117,7 @@ export default function CheckoutPage() {
             productId: item.productId,
             quantity: item.quantity,
             size: item.size,
+            color: item.color,
           })),
           shippingName: shipping.name,
           shippingPhone: shipping.phone,
@@ -339,13 +340,14 @@ export default function CheckoutPage() {
               <div className="space-y-3">
                 {cart.map((item) => (
                   <div
-                    key={`${item.productId}-${item.size}`}
+                    key={`${item.productId}-${item.size}-${item.color}`}
                     className="flex justify-between text-sm"
                   >
                     <div>
                       <p className="text-zinc-800">{item.name}</p>
                       <p className="text-zinc-500 text-xs">
                         Qty: {item.quantity}
+                        {item.color ? ` · Color: ${item.color}` : ""}
                         {item.size ? ` · Size: ${item.size}` : ""}
                       </p>
                     </div>

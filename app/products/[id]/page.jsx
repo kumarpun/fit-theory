@@ -16,6 +16,7 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState("");
+  const [selectedColor, setSelectedColor] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [mainImageIndex, setMainImageIndex] = useState(0);
@@ -108,13 +109,22 @@ export default function ProductDetailPage() {
   const sizesArray = product ? getSizesArray() : [];
   const hasSizes = sizesArray.length > 0 && sizesArray.some((s) => s.size !== "");
 
+  // Get colors for the currently selected size
+  const selectedSizeEntry = sizesArray.find((s) => s.size === selectedSize);
+  const sizeColorsArray = selectedSizeEntry && Array.isArray(selectedSizeEntry.colors)
+    ? selectedSizeEntry.colors.filter((c) => c.color !== "")
+    : [];
+  const hasSizeColors = sizeColorsArray.length > 0;
+
   const selectedStock = hasSizes
-    ? (sizesArray.find((s) => s.size === selectedSize)?.stock ?? 0)
+    ? hasSizeColors
+      ? (sizeColorsArray.find((c) => c.color === selectedColor)?.stock ?? 0)
+      : (selectedSizeEntry?.stock ?? 0)
     : getStockForSize(product, null);
 
   const handleAddToCart = () => {
     if (!product) return;
-    addToCart(product, hasSizes ? selectedSize : null, quantity);
+    addToCart(product, hasSizes ? selectedSize : null, quantity, hasSizeColors ? selectedColor : null);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
@@ -229,6 +239,7 @@ export default function ProductDetailPage() {
                         key={s.size}
                         onClick={() => {
                           setSelectedSize(s.size);
+                          setSelectedColor("");
                           setQuantity(1);
                         }}
                         disabled={isOut}
@@ -241,6 +252,39 @@ export default function ProductDetailPage() {
                         }`}
                       >
                         {s.size}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {hasSizeColors && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-zinc-700 mb-2">
+                  Color
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {sizeColorsArray.map((c) => {
+                    const colorStock = Number(c.stock) || 0;
+                    const isOut = colorStock === 0;
+                    return (
+                      <button
+                        key={c.color}
+                        onClick={() => {
+                          setSelectedColor(c.color);
+                          setQuantity(1);
+                        }}
+                        disabled={isOut}
+                        className={`px-4 py-2 border rounded-md text-sm font-medium transition-colors ${
+                          selectedColor === c.color
+                            ? "bg-zinc-700 text-white border-zinc-700"
+                            : isOut
+                            ? "bg-zinc-100 text-zinc-400 border-zinc-200 cursor-not-allowed line-through"
+                            : "bg-white text-zinc-800 border-zinc-300 hover:border-zinc-500"
+                        }`}
+                      >
+                        {c.color}
                       </button>
                     );
                   })}
@@ -283,13 +327,15 @@ export default function ProductDetailPage() {
 
             <button
               onClick={handleAddToCart}
-              disabled={selectedStock === 0 || (hasSizes && !selectedSize)}
+              disabled={selectedStock === 0 || (hasSizes && !selectedSize) || (hasSizeColors && !selectedColor)}
               className="w-full px-6 py-3 bg-zinc-700 text-white rounded-md font-medium hover:bg-zinc-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {totalStock === 0
                 ? "Out of Stock"
                 : hasSizes && !selectedSize
                 ? "Select a Size"
+                : hasSizeColors && !selectedColor
+                ? "Select a Color"
                 : selectedStock === 0
                 ? "Out of Stock"
                 : added
@@ -298,7 +344,9 @@ export default function ProductDetailPage() {
             </button>
 
             <p className="text-xs text-zinc-500 mt-3">
-              {hasSizes && selectedSize
+              {hasSizeColors && selectedColor
+                ? `${selectedStock} in stock for ${selectedSize} / ${selectedColor}`
+                : hasSizes && selectedSize
                 ? `${selectedStock} in stock for size ${selectedSize}`
                 : totalStock > 0
                 ? `${totalStock} total in stock`

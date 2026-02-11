@@ -11,8 +11,9 @@ export default function NewProductPage() {
     description: "",
     price: "",
     category: "",
+    gender: "",
   });
-  const [sizes, setSizes] = useState([{ size: "", stock: "" }]);
+  const [sizes, setSizes] = useState([{ size: "", stock: "", colors: [] }]);
   const [images, setImages] = useState([""]);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
@@ -58,15 +59,41 @@ export default function NewProductPage() {
   };
 
   const addSizeRow = () => {
-    setSizes([...sizes, { size: "", stock: "" }]);
+    setSizes([...sizes, { size: "", stock: "", colors: [] }]);
   };
 
   const removeSizeRow = (index) => {
     if (sizes.length > 1) {
       setSizes(sizes.filter((_, i) => i !== index));
     } else {
-      setSizes([{ size: "", stock: "" }]);
+      setSizes([{ size: "", stock: "", colors: [] }]);
     }
+  };
+
+  const handleSizeColorChange = (sizeIndex, colorIndex, field, value) => {
+    const updated = [...sizes];
+    const updatedColors = [...updated[sizeIndex].colors];
+    updatedColors[colorIndex] = { ...updatedColors[colorIndex], [field]: value };
+    updated[sizeIndex] = { ...updated[sizeIndex], colors: updatedColors };
+    setSizes(updated);
+  };
+
+  const addSizeColorRow = (sizeIndex) => {
+    const updated = [...sizes];
+    updated[sizeIndex] = {
+      ...updated[sizeIndex],
+      colors: [...updated[sizeIndex].colors, { color: "", stock: "" }],
+    };
+    setSizes(updated);
+  };
+
+  const removeSizeColorRow = (sizeIndex, colorIndex) => {
+    const updated = [...sizes];
+    updated[sizeIndex] = {
+      ...updated[sizeIndex],
+      colors: updated[sizeIndex].colors.filter((_, i) => i !== colorIndex),
+    };
+    setSizes(updated);
   };
 
   const handleSubmit = async (e) => {
@@ -77,6 +104,16 @@ export default function NewProductPage() {
     try {
       const filteredImages = images.filter((url) => url.trim() !== "");
 
+      const processedSizes = sizes.map((s) => {
+        const colors = s.colors
+          .filter((c) => c.color.trim() !== "")
+          .map((c) => ({ color: c.color, stock: Number(c.stock) || 0 }));
+        const stock = colors.length > 0
+          ? colors.reduce((sum, c) => sum + c.stock, 0)
+          : Number(s.stock) || 0;
+        return { size: s.size, stock, colors };
+      });
+
       const res = await authFetch("/api/admin/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -84,7 +121,7 @@ export default function NewProductPage() {
           ...formData,
           price: parseFloat(formData.price),
           images: filteredImages,
-          sizes: sizes.map((s) => ({ size: s.size, stock: Number(s.stock) || 0 })),
+          sizes: processedSizes,
         }),
       });
 
@@ -145,7 +182,7 @@ export default function NewProductPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
           <div>
             <label htmlFor="price" className="block text-sm font-medium mb-2 text-zinc-700">
               Price *
@@ -179,6 +216,22 @@ export default function NewProductPage() {
                   {cat.name}
                 </option>
               ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="gender" className="block text-sm font-medium mb-2 text-zinc-700">
+              Gender
+            </label>
+            <select
+              id="gender"
+              name="gender"
+              value={formData.gender}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+            >
+              <option value="">Select gender</option>
+              <option value="Men">Men</option>
+              <option value="Women">Women</option>
             </select>
           </div>
         </div>
@@ -218,31 +271,74 @@ export default function NewProductPage() {
 
         <div className="mb-6">
           <label className="block text-sm font-medium mb-2 text-zinc-700">
-            Sizes & Stock
+            Sizes, Colors & Stock
           </label>
           {sizes.map((entry, index) => (
-            <div key={index} className="flex gap-2 mb-2 items-center">
-              <input
-                type="text"
-                value={entry.size}
-                onChange={(e) => handleSizeChange(index, "size", e.target.value)}
-                placeholder="Size (e.g. M, L, XL)"
-                className="flex-1 px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-              />
-              <input
-                type="number"
-                value={entry.stock}
-                onChange={(e) => handleSizeChange(index, "stock", e.target.value)}
-                placeholder="Stock"
-                min="0"
-                className="w-24 px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-              />
+            <div key={index} className="mb-3 border border-zinc-200 rounded-md p-3">
+              <div className="flex gap-2 items-center mb-2">
+                <input
+                  type="text"
+                  value={entry.size}
+                  onChange={(e) => handleSizeChange(index, "size", e.target.value)}
+                  placeholder="Size (e.g. M, L, XL)"
+                  className="flex-1 px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                />
+                {entry.colors.length === 0 && (
+                  <input
+                    type="number"
+                    value={entry.stock}
+                    onChange={(e) => handleSizeChange(index, "stock", e.target.value)}
+                    placeholder="Stock"
+                    min="0"
+                    className="w-24 px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeSizeRow(index)}
+                  className="px-3 py-2 text-red-500 hover:text-red-700 text-sm transition-colors"
+                >
+                  Remove
+                </button>
+              </div>
+
+              {entry.colors.length > 0 && (
+                <div className="ml-4 space-y-2">
+                  {entry.colors.map((c, ci) => (
+                    <div key={ci} className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        value={c.color}
+                        onChange={(e) => handleSizeColorChange(index, ci, "color", e.target.value)}
+                        placeholder="Color (e.g. Red)"
+                        className="flex-1 px-3 py-1.5 border border-zinc-300 rounded-md bg-white text-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                      />
+                      <input
+                        type="number"
+                        value={c.stock}
+                        onChange={(e) => handleSizeColorChange(index, ci, "stock", e.target.value)}
+                        placeholder="Stock"
+                        min="0"
+                        className="w-20 px-3 py-1.5 border border-zinc-300 rounded-md bg-white text-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeSizeColorRow(index, ci)}
+                        className="px-2 py-1 text-red-500 hover:text-red-700 text-xs transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <button
                 type="button"
-                onClick={() => removeSizeRow(index)}
-                className="px-3 py-2 text-red-500 hover:text-red-700 text-sm transition-colors"
+                onClick={() => addSizeColorRow(index)}
+                className="ml-4 mt-1 text-xs text-zinc-500 hover:text-zinc-700 font-medium transition-colors"
               >
-                Remove
+                + Add color to this size
               </button>
             </div>
           ))}

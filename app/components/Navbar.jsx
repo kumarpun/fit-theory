@@ -116,6 +116,7 @@ export default function Navbar({ transparent = false }) {
               </form>
             </>
           )}
+          {navLink("/shop", "Shop")}
           <Link
             href="/cart"
             className={`text-base font-semibold transition-colors relative ${

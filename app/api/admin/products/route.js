@@ -24,7 +24,7 @@ export async function POST(request) {
     if (error) return error;
 
     await Product.sync();
-    const { name, description, price, images, category, sizes } =
+    const { name, description, price, images, category, gender, sizes } =
       await request.json();
 
     if (!name || !price) {
@@ -34,9 +34,17 @@ export async function POST(request) {
       );
     }
 
-    const sizesArr = Array.isArray(sizes) && sizes.length > 0 ? sizes : [{ size: "", stock: 0 }];
+    const sizesArr = Array.isArray(sizes) && sizes.length > 0 ? sizes : [{ size: "", stock: 0, colors: [] }];
     const totalStock = sizesArr.reduce((sum, s) => sum + (Number(s.stock) || 0), 0);
     const sizeStr = sizesArr.map((s) => s.size).filter(Boolean).join(", ");
+
+    // Collect all unique color names from nested colors
+    const allColors = new Set();
+    sizesArr.forEach((s) => {
+      if (Array.isArray(s.colors)) {
+        s.colors.forEach((c) => { if (c.color) allColors.add(c.color); });
+      }
+    });
 
     const product = await Product.create({
       name,
@@ -44,6 +52,8 @@ export async function POST(request) {
       price,
       images: images && images.length > 0 ? JSON.stringify(images) : null,
       category: category || null,
+      gender: gender || null,
+      color: allColors.size > 0 ? [...allColors].join(", ") : null,
       size: sizeStr || null,
       stock: totalStock,
       sizes: JSON.stringify(sizesArr),

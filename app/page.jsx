@@ -9,9 +9,45 @@ import Footer from "@/app/components/Footer";
 
 const heroImages = ["/home.jpg", "/aa.jpg"];
 
+function ProductCard({ product }) {
+  let firstImage = null;
+  if (product.images) {
+    try {
+      const parsed = JSON.parse(product.images);
+      if (Array.isArray(parsed) && parsed.length > 0) firstImage = parsed[0];
+    } catch {}
+  }
+  if (!firstImage && product.imageUrl) firstImage = product.imageUrl;
+
+  return (
+    <Link href={`/products/${product.id}`} className="group">
+      <div className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+        {firstImage ? (
+          <img
+            src={firstImage}
+            alt={product.name}
+            className="w-full h-84 object-cover object-top"
+          />
+        ) : (
+          <div className="w-full h-84 bg-zinc-100 flex items-center justify-center">
+            <span className="text-zinc-400 text-sm">No image</span>
+          </div>
+        )}
+      </div>
+      <div className="mt-3">
+        <h3 className="text-sm font-semibold text-zinc-800">{product.name}</h3>
+        <p className="text-lg font-bold text-zinc-800 mt-1">
+          ${Number(product.price).toFixed(2)}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
-  const [products, setProducts] = useState([]);
+  const [menProducts, setMenProducts] = useState([]);
+  const [womenProducts, setWomenProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -56,7 +92,10 @@ export default function Home() {
         const res = await fetch("/api/products");
         const data = await res.json();
         if (data.success) {
-          setProducts(data.products.slice(0, 3));
+          const men = data.products.filter((p) => p.gender === "Men");
+          const women = data.products.filter((p) => p.gender === "Women");
+          setMenProducts(men.slice(0, 3));
+          setWomenProducts(women.slice(0, 3));
         }
       } catch (err) {
         // Products will remain empty
@@ -120,62 +159,50 @@ export default function Home() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-zinc-800 mb-6">New Arrivals</h2>
-
         {loading ? (
           <p className="text-zinc-500">Loading products...</p>
-        ) : products.length === 0 ? (
-          <div className="bg-white p-8 rounded-lg shadow-md text-center">
-            <p className="text-zinc-500">No products found.</p>
-          </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map((product) => {
-              let firstImage = null;
-              if (product.images) {
-                try {
-                  const parsed = JSON.parse(product.images);
-                  if (Array.isArray(parsed) && parsed.length > 0) firstImage = parsed[0];
-                } catch {}
-              }
-              if (!firstImage && product.imageUrl) firstImage = product.imageUrl;
+          <>
+            {/* Men Section */}
+            {menProducts.length > 0 && (
+              <div className="mb-12">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-zinc-800">Men</h2>
+                  <Link href="/shop?gender=Men" className="text-sm font-medium text-zinc-500 hover:text-zinc-800 transition-colors">
+                    View all &rarr;
+                  </Link>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {menProducts.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+              </div>
+            )}
 
-              return (
-                <Link
-                  key={product.id}
-                  href={`/products/${product.id}`}
-                  className="group"
-                >
-                  <div className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                    {firstImage ? (
-                      <img
-                        src={firstImage}
-                        alt={product.name}
-                        className="w-full h-84 object-cover object-top"
-                      />
-                    ) : (
-                      <div className="w-full h-84 bg-zinc-100 flex items-center justify-center">
-                        <span className="text-zinc-400 text-sm">No image</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-3">
-                    <h3 className="text-sm font-semibold text-zinc-800">
-                      {product.name}
-                    </h3>
-                    {product.category && (
-                      <p className="text-xs text-zinc-500 mt-1">
-                        {product.category}
-                      </p>
-                    )}
-                    <p className="text-lg font-bold text-zinc-800 mt-1">
-                      ${Number(product.price).toFixed(2)}
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+            {/* Women Section */}
+            {womenProducts.length > 0 && (
+              <div className="mb-12">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-zinc-800">Women</h2>
+                  <Link href="/shop?gender=Women" className="text-sm font-medium text-zinc-500 hover:text-zinc-800 transition-colors">
+                    View all &rarr;
+                  </Link>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {womenProducts.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {menProducts.length === 0 && womenProducts.length === 0 && (
+              <div className="bg-white p-8 rounded-lg shadow-md text-center">
+                <p className="text-zinc-500">No products found.</p>
+              </div>
+            )}
+          </>
         )}
       </div>
       <Footer />

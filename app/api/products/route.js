@@ -7,10 +7,16 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
+    const gender = searchParams.get("gender");
     const search = searchParams.get("search");
 
     let sql = "SELECT * FROM products WHERE isActive = true";
     const params = [];
+
+    if (gender) {
+      sql += " AND gender = ?";
+      params.push(gender);
+    }
 
     if (category) {
       sql += " AND category = ?";

@@ -50,6 +50,16 @@ export async function PUT(request, { params }) {
       const sizesArr = data.sizes;
       data.stock = sizesArr.reduce((sum, s) => sum + (Number(s.stock) || 0), 0);
       data.size = sizesArr.map((s) => s.size).filter(Boolean).join(", ") || null;
+
+      // Collect all unique color names from nested colors
+      const allColors = new Set();
+      sizesArr.forEach((s) => {
+        if (Array.isArray(s.colors)) {
+          s.colors.forEach((c) => { if (c.color) allColors.add(c.color); });
+        }
+      });
+      data.color = allColors.size > 0 ? [...allColors].join(", ") : null;
+
       data.sizes = JSON.stringify(sizesArr);
     }
     const product = await Product.update(id, data);

@@ -21,6 +21,10 @@ const productSchema = {
     type: "VARCHAR(100)",
     default: null,
   },
+  gender: {
+    type: "VARCHAR(10)",
+    default: null,
+  },
   size: {
     type: "VARCHAR(255)",
     default: null,
@@ -30,6 +34,14 @@ const productSchema = {
     default: 0,
   },
   sizes: {
+    type: "TEXT",
+    default: null,
+  },
+  color: {
+    type: "VARCHAR(255)",
+    default: null,
+  },
+  colors: {
     type: "TEXT",
     default: null,
   },

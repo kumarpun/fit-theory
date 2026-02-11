@@ -14,8 +14,12 @@ export default function ShopPage() {
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(true);
   const [search, setSearch] = useState(searchParams.get("search") || "");
-  const [category, setCategory] = useState("");
+  const [gender, setGender] = useState(searchParams.get("gender") || "");
+  const [category, setCategory] = useState(searchParams.get("category") || "");
   const [categories, setCategories] = useState([]);
+  const initialGender = searchParams.get("gender") || "";
+  const [menOpen, setMenOpen] = useState(initialGender !== "Women");
+  const [womenOpen, setWomenOpen] = useState(initialGender === "Women");
 
   useEffect(() => {
     const initAuth = async () => {
@@ -53,6 +57,7 @@ export default function ShopPage() {
       try {
         const params = new URLSearchParams();
         if (search) params.set("search", search);
+        if (gender) params.set("gender", gender);
         if (category) params.set("category", category);
         const res = await fetch(`/api/products?${params.toString()}`);
         const data = await res.json();
@@ -67,7 +72,21 @@ export default function ShopPage() {
     };
 
     fetchProducts();
-  }, [authLoading, search, category]);
+  }, [authLoading, search, gender, category]);
+
+  const handleGender = (g) => {
+    setGender(g);
+    setCategory("");
+  };
+
+  const handleCategory = (cat) => {
+    setCategory(cat);
+  };
+
+  const handleAll = () => {
+    setGender("");
+    setCategory("");
+  };
 
   if (authLoading) {
     return (
@@ -77,67 +96,101 @@ export default function ShopPage() {
     );
   }
 
+  const sidebarBtn = (label, active, onClick) => (
+    <button
+      onClick={onClick}
+      className={`block w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+        active
+          ? "bg-zinc-700 text-white font-medium"
+          : "text-zinc-600 hover:bg-zinc-100"
+      }`}
+    >
+      {label}
+    </button>
+  );
+
+  const pillBtn = (label, active, onClick) => (
+    <button
+      onClick={onClick}
+      className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+        active
+          ? "bg-zinc-700 text-white"
+          : "bg-white text-zinc-600 border border-zinc-300"
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <div className="min-h-screen bg-zinc-50">
       <Navbar />
       <div className="max-w-6xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold text-zinc-800 mb-6">All Products</h1>
 
-        {/* Mobile: horizontal category pills */}
+        {/* Mobile: horizontal pills */}
         <div className="md:hidden flex gap-2 overflow-x-auto pb-4 mb-4 -mx-4 px-4">
-          <button
-            onClick={() => setCategory("")}
-            className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              category === ""
-                ? "bg-zinc-700 text-white"
-                : "bg-white text-zinc-600 border border-zinc-300"
-            }`}
-          >
-            All
-          </button>
+          {pillBtn("All", !gender && !category, handleAll)}
+          {pillBtn("Men", gender === "Men" && !category, () => handleGender("Men"))}
+          {pillBtn("Women", gender === "Women" && !category, () => handleGender("Women"))}
           {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategory(cat)}
-              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                category === cat
-                  ? "bg-zinc-700 text-white"
-                  : "bg-white text-zinc-600 border border-zinc-300"
-              }`}
-            >
-              {cat}
-            </button>
+            <span key={cat}>
+              {pillBtn(cat, category === cat, () => handleCategory(cat))}
+            </span>
           ))}
         </div>
 
         <div className="flex gap-8">
           {/* Desktop: left sidebar */}
           <aside className="hidden md:block w-48 flex-shrink-0">
-            <h2 className="text-sm font-semibold text-zinc-700 mb-3">Categories</h2>
             <nav className="space-y-1">
-              <button
-                onClick={() => setCategory("")}
-                className={`block w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                  category === ""
-                    ? "bg-zinc-700 text-white font-medium"
-                    : "text-zinc-600 hover:bg-zinc-100"
-                }`}
-              >
-                All
-              </button>
-              {categories.map((cat) => (
+              {sidebarBtn("All", !gender && !category, handleAll)}
+
+              {/* Men accordion */}
+              <div className="pt-3">
                 <button
-                  key={cat}
-                  onClick={() => setCategory(cat)}
-                  className={`block w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                    category === cat
-                      ? "bg-zinc-700 text-white font-medium"
-                      : "text-zinc-600 hover:bg-zinc-100"
-                  }`}
+                  onClick={() => setMenOpen(!menOpen)}
+                  className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 rounded-md transition-colors"
                 >
-                  {cat}
+                  Men
+                  <svg className={`w-4 h-4 transition-transform ${menOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </button>
-              ))}
+                {menOpen && (
+                  <div className="mt-1 space-y-0.5">
+                    {sidebarBtn("All Men", gender === "Men" && !category, () => handleGender("Men"))}
+                    {categories.map((cat) => (
+                      <span key={`men-${cat}`}>
+                        {sidebarBtn(cat, gender === "Men" && category === cat, () => { setGender("Men"); setCategory(cat); })}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Women accordion */}
+              <div className="pt-2">
+                <button
+                  onClick={() => setWomenOpen(!womenOpen)}
+                  className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 rounded-md transition-colors"
+                >
+                  Women
+                  <svg className={`w-4 h-4 transition-transform ${womenOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {womenOpen && (
+                  <div className="mt-1 space-y-0.5">
+                    {sidebarBtn("All Women", gender === "Women" && !category, () => handleGender("Women"))}
+                    {categories.map((cat) => (
+                      <span key={`women-${cat}`}>
+                        {sidebarBtn(cat, gender === "Women" && category === cat, () => { setGender("Women"); setCategory(cat); })}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </nav>
           </aside>
 
