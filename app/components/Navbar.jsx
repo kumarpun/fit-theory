@@ -15,6 +15,7 @@ export default function Navbar({ transparent = false }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
   const searchRef = useRef(null);
 
@@ -52,6 +53,12 @@ export default function Navbar({ transparent = false }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setSearchOpen(false);
+  }, [pathname]);
+
   const handleLogout = () => {
     clearTokens();
     window.dispatchEvent(new Event("cart-updated"));
@@ -74,6 +81,20 @@ export default function Navbar({ transparent = false }) {
     );
   };
 
+  const mobileNavLink = (href, label) => {
+    const active = pathname === href;
+    return (
+      <Link
+        href={href}
+        className={`block px-4 py-3 text-sm font-medium transition-colors ${
+          active ? "text-zinc-900 bg-zinc-100" : "text-zinc-600 hover:bg-zinc-50"
+        }`}
+      >
+        {label}
+      </Link>
+    );
+  };
+
   return (
     <nav
       className={`z-50 ${
@@ -84,37 +105,26 @@ export default function Navbar({ transparent = false }) {
       ref={searchRef}
     >
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className={`text-xl font-bold ${transparent ? "text-white" : "text-zinc-800"}`}>
+        <Link href="/" className={`text-xl font-bold flex-shrink-0 ${transparent ? "text-white" : "text-zinc-800"}`}>
           Fits Theory
         </Link>
 
-        <div className="flex items-center gap-6">
+        {/* Desktop nav */}
+        <div className="hidden md:flex items-center gap-6">
           {!isShopPage && (
-            <>
-              {/* Mobile: search icon */}
-              <button
-                onClick={() => setSearchOpen(!searchOpen)}
-                className={`sm:hidden transition-colors ${transparent ? "text-white/70 hover:text-white" : "text-zinc-500 hover:text-zinc-800"}`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
-              {/* Desktop: inline search */}
-              <form onSubmit={handleSearch} className="hidden sm:block">
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className={`w-64 px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-2 ${
-                    transparent
-                      ? "border-white/30 bg-white/10 text-white placeholder-white/50 focus:ring-white/40 focus:bg-white/20"
-                      : "border-zinc-300 bg-zinc-50 text-zinc-800 placeholder-zinc-400 focus:ring-zinc-400 focus:bg-white"
-                  }`}
-                />
-              </form>
-            </>
+            <form onSubmit={handleSearch}>
+              <input
+                type="text"
+                placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className={`w-64 px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-2 ${
+                  transparent
+                    ? "border-white/30 bg-white/10 text-white placeholder-white/50 focus:ring-white/40 focus:bg-white/20"
+                    : "border-zinc-300 bg-zinc-50 text-zinc-800 placeholder-zinc-400 focus:ring-zinc-400 focus:bg-white"
+                }`}
+              />
+            </form>
           )}
           {navLink("/shop", "Shop")}
           <Link
@@ -167,11 +177,52 @@ export default function Navbar({ transparent = false }) {
             )}
           </div>
         </div>
+
+        {/* Mobile nav icons */}
+        <div className="flex md:hidden items-center gap-3">
+          {!isShopPage && (
+            <button
+              onClick={() => { setSearchOpen(!searchOpen); setMobileMenuOpen(false); }}
+              className={`transition-colors ${transparent ? "text-white/70 hover:text-white" : "text-zinc-500 hover:text-zinc-800"}`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+          )}
+          <Link
+            href="/cart"
+            className={`relative transition-colors ${transparent ? "text-white/70 hover:text-white" : "text-zinc-500 hover:text-zinc-800"}`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            {cartCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-zinc-700 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                {cartCount}
+              </span>
+            )}
+          </Link>
+          <button
+            onClick={() => { setMobileMenuOpen(!mobileMenuOpen); setSearchOpen(false); }}
+            className={`transition-colors ${transparent ? "text-white/70 hover:text-white" : "text-zinc-500 hover:text-zinc-800"}`}
+          >
+            {mobileMenuOpen ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Mobile: full-width search bar */}
+      {/* Mobile: search bar */}
       {!isShopPage && searchOpen && (
-        <div className={`sm:hidden px-4 py-3 ${transparent ? "border-t border-white/20" : "border-t border-zinc-200"}`}>
+        <div className={`md:hidden px-4 py-3 ${transparent ? "border-t border-white/20" : "border-t border-zinc-200"}`}>
           <form onSubmit={handleSearch}>
             <input
               type="text"
@@ -179,13 +230,39 @@ export default function Navbar({ transparent = false }) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               autoFocus
-              className={`w-full px-4 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 ${
+              className={`w-full px-4 py-2 text-base border rounded-md focus:outline-none focus:ring-2 ${
                 transparent
                   ? "border-white/30 bg-white/10 text-white placeholder-white/50 focus:ring-white/40"
                   : "border-zinc-300 bg-white text-zinc-800 focus:ring-zinc-400"
               }`}
             />
           </form>
+        </div>
+      )}
+
+      {/* Mobile: menu dropdown */}
+      {mobileMenuOpen && (
+        <div className={`md:hidden border-t ${transparent ? "border-white/20 bg-black/60 backdrop-blur-sm" : "border-zinc-200 bg-white"}`}>
+          {mobileNavLink("/shop", "Shop")}
+          {mobileNavLink("/orders", "Orders")}
+          {admin && mobileNavLink("/admin", "Admin")}
+          <Link
+            href="/change-password"
+            className="block px-4 py-3 text-sm font-medium text-zinc-600 hover:bg-zinc-50 transition-colors"
+          >
+            Change Password
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="w-full text-left px-4 py-3 text-sm font-medium text-red-600 hover:bg-zinc-50 transition-colors"
+          >
+            Logout
+          </button>
+          {user && (
+            <div className={`px-4 py-3 border-t text-xs ${transparent ? "border-white/20 text-white/50" : "border-zinc-100 text-zinc-400"}`}>
+              Signed in as {user.email}
+            </div>
+          )}
         </div>
       )}
     </nav>
