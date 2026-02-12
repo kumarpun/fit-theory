@@ -98,7 +98,7 @@ export default function AdminLayout({ children }) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <span className="text-sm font-bold text-zinc-800">Fit Theory Admin</span>
+        <span className="text-sm font-bold text-zinc-800">Fits Theory Admin</span>
         <div className="w-10" />
       </div>
 
@@ -118,7 +118,7 @@ export default function AdminLayout({ children }) {
       >
         <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-zinc-800">Fit Theory</h1>
+            <h1 className="text-xl font-bold text-zinc-800">Fits Theory</h1>
             <p className="text-sm text-zinc-500">Admin Panel</p>
           </div>
           <button
