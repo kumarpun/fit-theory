@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { setTokens } from "@/lib/auth-client";
 import { GoogleLogin } from "@react-oauth/google";
+import Navbar from "@/app/components/Navbar";
 
 export default function LoginPage() {
   return (
@@ -97,7 +98,9 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
+    <div className="min-h-screen bg-zinc-50">
+      <Navbar />
+      <div className="flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <h1 className="text-3xl font-bold text-center mb-8 text-zinc-800">
           Welcome Back
@@ -204,6 +207,7 @@ function LoginContent() {
             </Link>
           </p>
         </form>
+      </div>
       </div>
     </div>
   );

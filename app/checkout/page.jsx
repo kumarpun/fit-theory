@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getUser, refreshTokens, authFetch } from "@/lib/auth-client";
-import { getCart, clearCart } from "@/lib/cart";
+import { getCheckoutItems, clearCheckoutItems, removeItemsFromCart } from "@/lib/cart";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
 
@@ -45,7 +45,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    const items = getCart();
+    const items = getCheckoutItems();
     if (items.length === 0) {
       router.replace("/cart");
       return;
@@ -133,7 +133,8 @@ export default function CheckoutPage() {
       const data = await res.json();
 
       if (data.success) {
-        clearCart();
+        removeItemsFromCart(cart);
+        clearCheckoutItems();
         router.push(`/orders/${data.orderId}`);
       } else {
         setError(data.message || "Failed to place order");
@@ -163,7 +164,17 @@ export default function CheckoutPage() {
         </div>
       )}
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold text-zinc-800 mb-6">Checkout</h1>
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            onClick={() => router.push("/cart")}
+            className="text-zinc-500 hover:text-zinc-800 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="text-2xl font-bold text-zinc-800">Checkout</h1>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md">

@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { getUser, refreshTokens } from "@/lib/auth-client";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
 
@@ -16,11 +15,9 @@ export default function ShopPage() {
 }
 
 function ShopContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [authLoading, setAuthLoading] = useState(true);
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [gender, setGender] = useState(searchParams.get("gender") || "");
   const [category, setCategory] = useState(searchParams.get("category") || "");
@@ -30,24 +27,6 @@ function ShopContent() {
   const [womenOpen, setWomenOpen] = useState(initialGender === "Women");
 
   useEffect(() => {
-    const initAuth = async () => {
-      let currentUser = getUser();
-      if (currentUser) {
-        const refreshed = await refreshTokens();
-        if (!refreshed) currentUser = null;
-      }
-      if (!currentUser) {
-        router.replace("/login");
-        return;
-      }
-      setAuthLoading(false);
-    };
-    initAuth();
-  }, [router]);
-
-  useEffect(() => {
-    if (authLoading) return;
-
     const fetchCategories = async () => {
       try {
         const res = await fetch("/api/categories");
@@ -56,11 +35,9 @@ function ShopContent() {
       } catch (err) {}
     };
     fetchCategories();
-  }, [authLoading]);
+  }, []);
 
   useEffect(() => {
-    if (authLoading) return;
-
     const fetchProducts = async () => {
       try {
         const params = new URLSearchParams();
@@ -80,7 +57,7 @@ function ShopContent() {
     };
 
     fetchProducts();
-  }, [authLoading, search, gender, category]);
+  }, [search, gender, category]);
 
   const handleGender = (g) => {
     setGender(g);
@@ -95,14 +72,6 @@ function ShopContent() {
     setGender("");
     setCategory("");
   };
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50">
-        <p className="text-zinc-500">Loading...</p>
-      </div>
-    );
-  }
 
   const sidebarBtn = (label, active, onClick) => (
     <button

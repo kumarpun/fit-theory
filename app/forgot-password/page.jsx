@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Navbar from "@/app/components/Navbar";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -38,7 +39,9 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
+    <div className="min-h-screen bg-zinc-50">
+      <Navbar />
+      <div className="flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <h1 className="text-3xl font-bold text-center mb-8 text-zinc-800">
           Forgot Password
@@ -101,6 +104,7 @@ export default function ForgotPasswordPage() {
             </Link>
           </p>
         </form>
+      </div>
       </div>
     </div>
   );

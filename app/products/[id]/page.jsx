@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { getUser, refreshTokens } from "@/lib/auth-client";
 import { addToCart, getStockForSize } from "@/lib/cart";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
@@ -14,7 +13,6 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [authLoading, setAuthLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -24,24 +22,6 @@ export default function ProductDetailPage() {
   const [relatedProducts, setRelatedProducts] = useState([]);
 
   useEffect(() => {
-    const initAuth = async () => {
-      let currentUser = getUser();
-      if (currentUser) {
-        const refreshed = await refreshTokens();
-        if (!refreshed) currentUser = null;
-      }
-      if (!currentUser) {
-        router.replace("/login");
-        return;
-      }
-      setAuthLoading(false);
-    };
-    initAuth();
-  }, [router]);
-
-  useEffect(() => {
-    if (authLoading) return;
-
     const fetchProduct = async () => {
       try {
         const res = await fetch(`/api/products/${params.id}`);
@@ -73,7 +53,7 @@ export default function ProductDetailPage() {
     };
 
     fetchProduct();
-  }, [authLoading, params.id]);
+  }, [params.id]);
 
   // Parse images from JSON string, fallback to imageUrl
   const getProductImages = () => {
@@ -129,7 +109,7 @@ export default function ProductDetailPage() {
     setTimeout(() => setAdded(false), 2000);
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-zinc-50">
         <Navbar />

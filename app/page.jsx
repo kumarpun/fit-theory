@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getUser, refreshTokens } from "@/lib/auth-client";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
 
@@ -45,11 +43,9 @@ function ProductCard({ product }) {
 }
 
 export default function Home() {
-  const router = useRouter();
   const [menProducts, setMenProducts] = useState([]);
   const [womenProducts, setWomenProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [authLoading, setAuthLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [textVisible, setTextVisible] = useState(true);
 
@@ -69,24 +65,6 @@ export default function Home() {
   }, [currentSlide, changeSlide]);
 
   useEffect(() => {
-    const initAuth = async () => {
-      let currentUser = getUser();
-      if (currentUser) {
-        const refreshed = await refreshTokens();
-        if (!refreshed) currentUser = null;
-      }
-      if (!currentUser) {
-        router.replace("/login");
-        return;
-      }
-      setAuthLoading(false);
-    };
-    initAuth();
-  }, [router]);
-
-  useEffect(() => {
-    if (authLoading) return;
-
     const fetchProducts = async () => {
       try {
         const res = await fetch("/api/products");
@@ -105,15 +83,7 @@ export default function Home() {
     };
 
     fetchProducts();
-  }, [authLoading]);
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50">
-        <p className="text-zinc-500">Loading...</p>
-      </div>
-    );
-  }
+  }, []);
 
   return (
     <div className="min-h-screen bg-zinc-50">
