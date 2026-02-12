@@ -107,7 +107,7 @@ export default function OrdersPage() {
                     {new Date(order.created_at).toLocaleDateString()}
                   </p>
                   <p className="text-zinc-800 font-medium">
-                    ${Number(order.total).toFixed(2)}
+                    रु {Number(order.total).toFixed(2)}
                   </p>
                 </div>
               </Link>

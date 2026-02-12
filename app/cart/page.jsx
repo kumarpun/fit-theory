@@ -82,114 +82,119 @@ export default function CartPage() {
               {cart.map((item, i) => (
                 <div
                   key={`${item.productId}-${item.size}-${item.color}`}
-                  className={`flex items-center gap-4 p-4 ${
-                    i > 0 ? "border-t border-zinc-100" : ""
-                  }`}
+                  className={`p-4 ${i > 0 ? "border-t border-zinc-100" : ""}`}
                 >
-                  {item.imageUrl ? (
-                    <img
-                      src={item.imageUrl}
-                      alt={item.name}
-                      className="w-16 h-16 rounded-md object-cover"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-md bg-zinc-100 flex items-center justify-center">
-                      <span className="text-zinc-400 text-xs">No img</span>
-                    </div>
-                  )}
+                  {/* Top row: image + info + remove (desktop: price too) */}
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-md object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-md bg-zinc-100 flex items-center justify-center flex-shrink-0">
+                        <span className="text-zinc-400 text-xs">No img</span>
+                      </div>
+                    )}
 
-                  <div className="flex-1 min-w-0">
-                    <Link
-                      href={`/products/${item.productId}`}
-                      className="text-sm font-semibold text-zinc-800 truncate hover:underline block"
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        href={`/products/${item.productId}`}
+                        className="text-sm font-semibold text-zinc-800 hover:underline block truncate"
+                      >
+                        {item.name}
+                      </Link>
+                      {item.color && (
+                        <p className="text-xs text-zinc-500">Color: {item.color}</p>
+                      )}
+                      {item.size && (
+                        <p className="text-xs text-zinc-500">Size: {item.size}</p>
+                      )}
+                      <p className="text-sm text-zinc-800 mt-0.5">
+                        रु {item.price.toFixed(2)}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => removeFromCart(item.productId, item.size, item.color)}
+                      className="text-zinc-400 hover:text-red-500 transition-colors flex-shrink-0"
                     >
-                      {item.name}
-                    </Link>
-                    {item.color && (
-                      <p className="text-xs text-zinc-500">Color: {item.color}</p>
-                    )}
-                    {item.size && (
-                      <p className="text-xs text-zinc-500">Size: {item.size}</p>
-                    )}
-                    <p className="text-sm text-zinc-800">
-                      ${item.price.toFixed(2)}
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Bottom row: quantity + line total */}
+                  <div className="flex items-center justify-between mt-3 ml-[76px] sm:ml-[96px]">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() =>
+                          updateCartItemQuantity(
+                            item.productId,
+                            item.size,
+                            item.quantity - 1,
+                            item.color
+                          )
+                        }
+                        className="w-8 h-8 border border-zinc-300 rounded text-zinc-800 hover:bg-zinc-100 text-sm transition-colors"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={item.quantity}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          if (val === "") return;
+                          const num = Math.max(1, Math.min(item.stock || Infinity, Number(val)));
+                          updateCartItemQuantity(item.productId, item.size, num, item.color);
+                        }}
+                        className="w-10 text-center text-base text-zinc-800 border border-zinc-300 rounded py-1 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                      />
+                      <button
+                        onClick={() =>
+                          updateCartItemQuantity(
+                            item.productId,
+                            item.size,
+                            item.quantity + 1,
+                            item.color
+                          )
+                        }
+                        disabled={item.stock && item.quantity >= item.stock}
+                        className="w-8 h-8 border border-zinc-300 rounded text-zinc-800 hover:bg-zinc-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <p className="text-sm font-semibold text-zinc-800">
+                      रु {(item.price * item.quantity).toFixed(2)}
                     </p>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() =>
-                        updateCartItemQuantity(
-                          item.productId,
-                          item.size,
-                          item.quantity - 1,
-                          item.color
-                        )
-                      }
-                      className="w-8 h-8 border border-zinc-300 rounded text-zinc-800 hover:bg-zinc-100 text-sm transition-colors"
-                    >
-                      -
-                    </button>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={item.quantity}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, "");
-                        if (val === "") return;
-                        const num = Math.max(1, Math.min(item.stock || Infinity, Number(val)));
-                        updateCartItemQuantity(item.productId, item.size, num, item.color);
-                      }}
-                      className="w-10 text-center text-sm text-zinc-800 border border-zinc-300 rounded py-1 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-                    />
-                    <button
-                      onClick={() =>
-                        updateCartItemQuantity(
-                          item.productId,
-                          item.size,
-                          item.quantity + 1,
-                          item.color
-                        )
-                      }
-                      disabled={item.stock && item.quantity >= item.stock}
-                      className="w-8 h-8 border border-zinc-300 rounded text-zinc-800 hover:bg-zinc-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      +
-                    </button>
-                  </div>
-
-                  <p className="text-sm font-semibold text-zinc-800 w-20 text-right">
-                    ${(item.price * item.quantity).toFixed(2)}
-                  </p>
-
-                  <button
-                    onClick={() => removeFromCart(item.productId, item.size, item.color)}
-                    className="text-red-500 hover:text-red-700 text-sm transition-colors"
-                  >
-                    Remove
-                  </button>
                 </div>
               ))}
             </div>
 
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between text-sm text-zinc-600">
                   <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>रु {subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-zinc-600">
                   <span>Delivery Charge</span>
-                  <span>${deliveryCharge.toFixed(2)}</span>
+                  <span>रु {deliveryCharge.toFixed(2)}</span>
                 </div>
               </div>
-              <div className="border-t border-zinc-200 pt-4 flex items-center justify-between">
+              <div className="border-t border-zinc-200 pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <p className="text-lg font-bold text-zinc-800">
-                  Total: ${grandTotal.toFixed(2)}
+                  Total: रु {grandTotal.toFixed(2)}
                 </p>
                 <Link
                   href="/checkout"
-                  className="px-6 py-3 bg-zinc-700 text-white rounded-md font-medium hover:bg-zinc-600 transition-colors"
+                  className="px-6 py-3 bg-zinc-700 text-white rounded-md font-medium hover:bg-zinc-600 transition-colors text-center"
                 >
                   Proceed to Checkout
                 </Link>

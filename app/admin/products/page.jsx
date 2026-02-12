@@ -86,7 +86,7 @@ export default function AdminProductsPage() {
                       {product.category || "-"}
                     </td>
                     <td className="px-6 py-4 text-sm text-zinc-800">
-                      ${Number(product.price).toFixed(2)}
+                      रु {Number(product.price).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 text-sm text-zinc-800">
                       {product.stock}
@@ -145,7 +145,7 @@ export default function AdminProductsPage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-zinc-800 mb-3">
-                  <span className="font-medium">${Number(product.price).toFixed(2)}</span>
+                  <span className="font-medium">रु {Number(product.price).toFixed(2)}</span>
                   <span className="text-zinc-500">Stock: {product.stock}</span>
                 </div>
                 <div className="flex gap-4 text-sm">
