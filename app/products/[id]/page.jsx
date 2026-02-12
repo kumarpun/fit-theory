@@ -216,7 +216,7 @@ export default function ProductDetailPage() {
               <p className="text-sm text-zinc-500 mb-4">{product.category}</p>
             )}
             <p className="text-3xl font-bold text-zinc-800 mb-6">
-              रु {Number(product.price).toFixed(2)}
+              रु {Number(product.price)}
             </p>
 
             {product.description && (
@@ -393,7 +393,7 @@ export default function ProductDetailPage() {
                   <div className="mt-3">
                     <h3 className="text-sm font-semibold text-zinc-800">{rp.name}</h3>
                     <p className="text-lg font-bold text-zinc-800 mt-1">
-                      रु {Number(rp.price).toFixed(2)}
+                      रु {Number(rp.price)}
                     </p>
                   </div>
                 </Link>

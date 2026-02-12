@@ -37,7 +37,7 @@ function ProductCard({ product }) {
       <div className="mt-3">
         <h3 className="text-sm font-semibold text-zinc-800">{product.name}</h3>
         <p className="text-lg font-bold text-zinc-800 mt-1">
-          रु {Number(product.price).toFixed(2)}
+          रु {Number(product.price)}
         </p>
       </div>
     </Link>

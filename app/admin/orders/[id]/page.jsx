@@ -142,13 +142,13 @@ export default function AdminOrderDetailPage() {
                 <p>
                   <span className="text-zinc-500">Subtotal:</span>{" "}
                   <span className="text-zinc-800">
-                    रु {(Number(order.total) - Number(order.deliveryCharge)).toFixed(2)}
+                    रु {(Number(order.total) - Number(order.deliveryCharge))}
                   </span>
                 </p>
                 <p>
                   <span className="text-zinc-500">Delivery:</span>{" "}
                   <span className="text-zinc-800">
-                    रु {Number(order.deliveryCharge).toFixed(2)}
+                    रु {Number(order.deliveryCharge)}
                   </span>
                 </p>
               </>
@@ -156,7 +156,7 @@ export default function AdminOrderDetailPage() {
             <p>
               <span className="text-zinc-500">Total:</span>{" "}
               <span className="text-zinc-800 font-semibold">
-                रु {Number(order.total).toFixed(2)}
+                रु {Number(order.total)}
               </span>
             </p>
             <p>
@@ -300,13 +300,13 @@ export default function AdminOrderDetailPage() {
                     {item.size || "-"}
                   </td>
                   <td className="px-6 py-4 text-sm text-zinc-800">
-                    रु {Number(item.price).toFixed(2)}
+                    रु {Number(item.price)}
                   </td>
                   <td className="px-6 py-4 text-sm text-zinc-800">
                     {item.quantity}
                   </td>
                   <td className="px-6 py-4 text-sm text-zinc-800 text-right">
-                    रु {(Number(item.price) * item.quantity).toFixed(2)}
+                    रु {(Number(item.price) * item.quantity)}
                   </td>
                 </tr>
               ))}
@@ -325,7 +325,7 @@ export default function AdminOrderDetailPage() {
                   <span>Qty: {item.quantity}</span>
                 </div>
                 <span className="text-zinc-800 font-medium">
-                  रु {(Number(item.price) * item.quantity).toFixed(2)}
+                  रु {(Number(item.price) * item.quantity)}
                 </span>
               </div>
             </div>

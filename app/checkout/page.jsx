@@ -352,7 +352,7 @@ export default function CheckoutPage() {
                       </p>
                     </div>
                     <p className="text-zinc-800 font-medium">
-                      रु {(item.price * item.quantity).toFixed(2)}
+                      रु {(item.price * item.quantity)}
                     </p>
                   </div>
                 ))}
@@ -360,17 +360,17 @@ export default function CheckoutPage() {
               <div className="border-t border-zinc-200 mt-4 pt-3 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-zinc-500">Subtotal</span>
-                  <span className="text-zinc-800">रु {subtotal.toFixed(2)}</span>
+                  <span className="text-zinc-800">रु {subtotal}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-zinc-500">Delivery Charge</span>
-                  <span className="text-zinc-800">रु {deliveryCharge.toFixed(2)}</span>
+                  <span className="text-zinc-800">रु {deliveryCharge}</span>
                 </div>
               </div>
               <div className="border-t border-zinc-200 mt-3 pt-4 flex justify-between">
                 <p className="text-lg font-bold text-zinc-800">Total</p>
                 <p className="text-lg font-bold text-zinc-800">
-                  रु {grandTotal.toFixed(2)}
+                  रु {grandTotal}
                 </p>
               </div>
             </div>

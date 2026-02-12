@@ -65,7 +65,7 @@ export default function AdminSettingsPage() {
 
         <div className="mb-6">
           <label htmlFor="deliveryCharge" className="block text-sm font-medium mb-2 text-zinc-700">
-            Delivery Charge ($)
+            Delivery Charge (रु)
           </label>
           <input
             type="number"

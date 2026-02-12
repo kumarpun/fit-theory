@@ -112,7 +112,7 @@ export default function CartPage() {
                         <p className="text-xs text-zinc-500">Size: {item.size}</p>
                       )}
                       <p className="text-sm text-zinc-800 mt-0.5">
-                        रु {item.price.toFixed(2)}
+                        रु {item.price}
                       </p>
                     </div>
 
@@ -170,7 +170,7 @@ export default function CartPage() {
                       </button>
                     </div>
                     <p className="text-sm font-semibold text-zinc-800">
-                      रु {(item.price * item.quantity).toFixed(2)}
+                      रु {(item.price * item.quantity)}
                     </p>
                   </div>
                 </div>
@@ -181,16 +181,16 @@ export default function CartPage() {
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between text-sm text-zinc-600">
                   <span>Subtotal</span>
-                  <span>रु {subtotal.toFixed(2)}</span>
+                  <span>रु {subtotal}</span>
                 </div>
                 <div className="flex justify-between text-sm text-zinc-600">
                   <span>Delivery Charge</span>
-                  <span>रु {deliveryCharge.toFixed(2)}</span>
+                  <span>रु {deliveryCharge}</span>
                 </div>
               </div>
               <div className="border-t border-zinc-200 pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <p className="text-lg font-bold text-zinc-800">
-                  Total: रु {grandTotal.toFixed(2)}
+                  Total: रु {grandTotal}
                 </p>
                 <Link
                   href="/checkout"

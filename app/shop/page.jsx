@@ -261,7 +261,7 @@ function ShopContent() {
                           </p>
                         )}
                         <p className="text-lg font-bold text-zinc-800 mt-1">
-                          रु {Number(product.price).toFixed(2)}
+                          रु {Number(product.price)}
                         </p>
                       </div>
                     </Link>

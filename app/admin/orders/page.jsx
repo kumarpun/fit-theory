@@ -72,7 +72,7 @@ export default function AdminOrdersPage() {
                       <p className="text-zinc-500 text-xs">{order.userEmail}</p>
                     </td>
                     <td className="px-6 py-4 text-sm text-zinc-800">
-                      रु {Number(order.total).toFixed(2)}
+                      रु {Number(order.total)}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <span
@@ -123,7 +123,7 @@ export default function AdminOrdersPage() {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-medium text-zinc-800">
-                    रु {Number(order.total).toFixed(2)}
+                    रु {Number(order.total)}
                   </span>
                   <span className="text-xs text-zinc-500">
                     {new Date(order.created_at).toLocaleDateString()}
