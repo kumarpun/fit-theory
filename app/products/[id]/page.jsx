@@ -149,23 +149,15 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
             {productImages.length > 0 ? (
-              <>
-                {/* Main image */}
-                <img
-                  src={productImages[mainImageIndex]}
-                  alt={product.name}
-                  onClick={() => setLightboxOpen(true)}
-                  className="w-full rounded-lg shadow-md object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                />
-
-                {/* Thumbnails */}
+              <div className="flex gap-3">
+                {/* Thumbnails on the left */}
                 {productImages.length > 1 && (
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex flex-col gap-2 flex-shrink-0">
                     {productImages.map((img, index) => (
                       <button
                         key={index}
                         onClick={() => setMainImageIndex(index)}
-                        className={`w-16 h-16 rounded-md overflow-hidden border-2 transition-colors ${
+                        className={`w-14 h-14 sm:w-16 sm:h-16 rounded-md overflow-hidden border-2 transition-colors ${
                           mainImageIndex === index
                             ? "border-zinc-700"
                             : "border-zinc-200 hover:border-zinc-400"
@@ -180,7 +172,17 @@ export default function ProductDetailPage() {
                     ))}
                   </div>
                 )}
-              </>
+
+                {/* Main image */}
+                <div className="flex-1 min-w-0">
+                  <img
+                    src={productImages[mainImageIndex]}
+                    alt={product.name}
+                    onClick={() => setLightboxOpen(true)}
+                    className="w-full rounded-lg shadow-md object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                  />
+                </div>
+              </div>
             ) : (
               <div className="w-full h-96 bg-zinc-100 rounded-lg flex items-center justify-center">
                 <span className="text-zinc-400">No image</span>
