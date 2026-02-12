@@ -109,8 +109,11 @@ export default function Navbar({ transparent = false }) {
       ref={searchRef}
     >
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className={`text-xl font-bold flex-shrink-0 ${transparent ? "text-white" : "text-zinc-800"}`}>
-          Fits Theory
+        <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+          <img src="/flogo.png" alt="Fits Theory" className="h-40 w-auto opacity-100 translate-y-0.8" />
+          {/* <span className={`text-xl font-bold ${transparent ? "text-white" : "text-zinc-800"}`}>
+            Fits Theory
+          </span> */}
         </Link>
 
         {/* Desktop nav */}
