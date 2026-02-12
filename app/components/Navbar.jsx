@@ -36,8 +36,16 @@ export default function Navbar({ transparent = false }) {
     setCartCount(getCartCount());
 
     const handleCartUpdate = () => setCartCount(getCartCount());
+    const handleAuthUpdate = () => {
+      setUser(getUser());
+      setAdmin(isAdmin());
+    };
     window.addEventListener("cart-updated", handleCartUpdate);
-    return () => window.removeEventListener("cart-updated", handleCartUpdate);
+    window.addEventListener("auth-updated", handleAuthUpdate);
+    return () => {
+      window.removeEventListener("cart-updated", handleCartUpdate);
+      window.removeEventListener("auth-updated", handleAuthUpdate);
+    };
   }, []);
 
   useEffect(() => {
