@@ -89,7 +89,7 @@ export default function Home() {
     <div className="min-h-screen bg-zinc-50">
       <Navbar transparent />
       {/* Hero Carousel */}
-      <div className="relative h-[65vh] sm:h-[90vh] overflow-hidden">
+      <div className="relative h-[60vh] sm:h-[90vh] overflow-hidden">
         {heroImages.map((src, index) => (
           <img
             key={src}
