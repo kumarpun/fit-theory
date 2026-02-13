@@ -52,8 +52,8 @@ export default function ImageLightbox({ images, initialIndex = 0, onClose }) {
 
       {/* Image */}
       <div
-        className={`flex items-center justify-center ${
-          zoomed ? "overflow-auto cursor-zoom-out" : "cursor-zoom-in"
+        className={`${
+          zoomed ? "overflow-auto cursor-zoom-out" : "flex items-center justify-center cursor-zoom-in"
         }`}
         style={{ width: "100%", height: "100%" }}
         onClick={(e) => {
@@ -67,14 +67,11 @@ export default function ImageLightbox({ images, initialIndex = 0, onClose }) {
             e.stopPropagation();
             setZoomed(!zoomed);
           }}
-          className="transition-transform duration-200"
-          style={{
-            maxWidth: zoomed ? "none" : "90vw",
-            maxHeight: zoomed ? "none" : "90vh",
-            width: zoomed ? "auto" : "auto",
-            transform: zoomed ? "scale(2)" : "scale(1)",
-            transformOrigin: "center center",
-          }}
+          style={
+            zoomed
+              ? { width: "125%", maxWidth: "none", display: "block" }
+              : { maxWidth: "90vw", maxHeight: "90vh" }
+          }
         />
       </div>
 

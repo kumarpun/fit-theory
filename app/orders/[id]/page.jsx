@@ -6,12 +6,14 @@ import Link from "next/link";
 import { getUser, refreshTokens, authFetch } from "@/lib/auth-client";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
+import ImageLightbox from "@/app/components/ImageLightbox";
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-700",
   confirmed: "bg-blue-100 text-blue-700",
   shipped: "bg-indigo-100 text-indigo-700",
   delivered: "bg-green-100 text-green-700",
+  received: "bg-emerald-100 text-emerald-700",
   cancelled: "bg-red-100 text-red-700",
   returned: "bg-orange-100 text-orange-700",
 };
@@ -27,6 +29,10 @@ export default function OrderDetailPage() {
   const [showReturnForm, setShowReturnForm] = useState(false);
   const [returnReason, setReturnReason] = useState("");
   const [submittingReturn, setSubmittingReturn] = useState(false);
+  const [markingReceived, setMarkingReceived] = useState(false);
+  const [returnImageData, setReturnImageData] = useState(null);
+  const [returnImagePreview, setReturnImagePreview] = useState("");
+  const [lightboxImage, setLightboxImage] = useState(null);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -65,20 +71,46 @@ export default function OrderDetailPage() {
     fetchOrder();
   }, [authLoading, params.id]);
 
+  const handleReturnImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setReturnImageData(reader.result);
+      setReturnImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleReturn = async () => {
     if (!returnReason.trim()) return;
     setSubmittingReturn(true);
     try {
+      let returnImage = null;
+      if (returnImageData) {
+        const uploadRes = await authFetch("/api/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: returnImageData }),
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData.success) {
+          returnImage = uploadData.url;
+        }
+      }
+
       const res = await authFetch(`/api/orders/${params.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ returnReason }),
+        body: JSON.stringify({ returnReason, returnImage }),
       });
       const data = await res.json();
       if (data.success) {
-        setOrder({ ...order, status: "returned", returnReason });
+        setOrder({ ...order, status: "returned", returnReason, returnImage });
         setShowReturnForm(false);
         setReturnReason("");
+        setReturnImageData(null);
+        setReturnImagePreview("");
       } else {
         alert(data.message || "Failed to submit return request");
       }
@@ -108,6 +140,33 @@ export default function OrderDetailPage() {
       setCancelling(false);
     }
   };
+
+  const handleReceived = async () => {
+    setMarkingReceived(true);
+    try {
+      const res = await authFetch(`/api/orders/${params.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "received" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOrder({ ...order, status: "received", receivedAt: new Date().toISOString() });
+      } else {
+        alert(data.message || "Failed to mark as received");
+      }
+    } catch (err) {
+      alert("Failed to mark as received");
+    } finally {
+      setMarkingReceived(false);
+    }
+  };
+
+  const canRequestReturn = order && (
+    order.status === "delivered" ||
+    (order.status === "received" && order.receivedAt &&
+      (Date.now() - new Date(order.receivedAt).getTime()) < 24 * 60 * 60 * 1000)
+  );
 
   if (authLoading || loading) {
     return (
@@ -163,7 +222,16 @@ export default function OrderDetailPage() {
                 {cancelling ? "Cancelling..." : "Cancel Order"}
               </button>
             )}
-            {order.status === "delivered" && !showReturnForm && (
+            {order.status === "delivered" && (
+              <button
+                onClick={handleReceived}
+                disabled={markingReceived}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-md text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50"
+              >
+                {markingReceived ? "Updating..." : "Mark as Received"}
+              </button>
+            )}
+            {canRequestReturn && !showReturnForm && (
               <button
                 onClick={() => setShowReturnForm(true)}
                 className="px-4 py-2 border border-orange-500 text-orange-500 rounded-md text-sm font-medium hover:bg-orange-50 transition-colors"
@@ -186,6 +254,33 @@ export default function OrderDetailPage() {
               placeholder="Describe the reason for return (e.g. defective product, wrong item)..."
               className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400 mb-4"
             />
+            <div className="mb-4">
+              <label className="block text-sm text-zinc-600 mb-1">
+                Upload Image (optional)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleReturnImageChange}
+                className="block w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-zinc-100 file:text-zinc-700 hover:file:bg-zinc-200"
+              />
+              {returnImagePreview && (
+                <div className="mt-2 relative inline-block">
+                  <img
+                    src={returnImagePreview}
+                    alt="Return preview"
+                    className="w-32 h-32 object-cover rounded-md border border-zinc-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setReturnImageData(null); setReturnImagePreview(""); }}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                  >
+                    x
+                  </button>
+                </div>
+              )}
+            </div>
             <div className="flex gap-3">
               <button
                 onClick={handleReturn}
@@ -219,6 +314,14 @@ export default function OrderDetailPage() {
               Return Reason
             </h2>
             <p className="text-sm text-orange-700">{order.returnReason}</p>
+            {order.returnImage && (
+              <img
+                src={order.returnImage}
+                alt="Return evidence"
+                onClick={() => setLightboxImage(order.returnImage)}
+                className="mt-3 w-32 h-32 object-cover rounded-md border border-orange-200 cursor-pointer hover:opacity-80 transition-opacity"
+              />
+            )}
           </div>
         )}
 
@@ -318,6 +421,13 @@ export default function OrderDetailPage() {
           </table>
         </div>
       </div>
+      {lightboxImage && (
+        <ImageLightbox
+          images={[lightboxImage]}
+          initialIndex={0}
+          onClose={() => setLightboxImage(null)}
+        />
+      )}
       <Footer />
     </div>
   );

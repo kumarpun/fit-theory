@@ -50,7 +50,7 @@ export async function PUT(request, { params }) {
     const { id } = await params;
     const { status, cancellationReason } = await request.json();
 
-    const validStatuses = ["pending", "confirmed", "shipped", "delivered", "cancelled", "returned"];
+    const validStatuses = ["pending", "confirmed", "shipped", "delivered", "received", "cancelled", "returned"];
     if (!validStatuses.includes(status)) {
       return Response.json(
         { success: false, message: "Invalid status" },

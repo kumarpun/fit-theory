@@ -118,9 +118,9 @@ export default function Navbar({ transparent = false }) {
     >
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-          <img src="/flogo.png" alt="Fits Theory" className="h-40 w-auto opacity-100 translate-y-0.8" />
+          <img src="/flogo.png" alt="Seto" className="h-40 w-auto opacity-100 translate-y-0.8" />
           {/* <span className={`text-xl font-bold ${transparent ? "text-white" : "text-zinc-800"}`}>
-            Fits Theory
+            Seto
           </span> */}
         </Link>
 
@@ -178,6 +178,13 @@ export default function Navbar({ transparent = false }) {
 
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white border border-zinc-200 rounded-lg shadow-lg py-1 z-50">
+                  <Link
+                    href="/profile"
+                    onClick={() => setDropdownOpen(false)}
+                    className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
+                  >
+                    Profile
+                  </Link>
                   <Link
                     href="/change-password"
                     onClick={() => setDropdownOpen(false)}
@@ -269,6 +276,12 @@ export default function Navbar({ transparent = false }) {
             <>
               {mobileNavLink("/orders", "Orders")}
               {admin && mobileNavLink("/admin", "Admin")}
+              <Link
+                href="/profile"
+                className="block px-4 py-3 text-sm font-medium text-zinc-600 hover:bg-zinc-50 transition-colors"
+              >
+                Profile
+              </Link>
               <Link
                 href="/change-password"
                 className="block px-4 py-3 text-sm font-medium text-zinc-600 hover:bg-zinc-50 transition-colors"

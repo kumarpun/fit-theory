@@ -22,9 +22,16 @@ function ShopContent() {
   const [gender, setGender] = useState(searchParams.get("gender") || "");
   const [category, setCategory] = useState(searchParams.get("category") || "");
   const [categories, setCategories] = useState([]);
+  const [sortBy, setSortBy] = useState("");
+  const [priceRange, setPriceRange] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const ITEMS_PER_PAGE = 9;
   const initialGender = searchParams.get("gender") || "";
   const [menOpen, setMenOpen] = useState(initialGender !== "Women");
   const [womenOpen, setWomenOpen] = useState(initialGender === "Women");
+  const [mobileMenOpen, setMobileMenOpen] = useState(false);
+  const [mobileWomenOpen, setMobileWomenOpen] = useState(false);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -39,15 +46,20 @@ function ShopContent() {
 
   useEffect(() => {
     const fetchProducts = async () => {
+      setLoading(true);
       try {
         const params = new URLSearchParams();
         if (search) params.set("search", search);
         if (gender) params.set("gender", gender);
         if (category) params.set("category", category);
+        if (priceRange) params.set("priceRange", priceRange);
+        params.set("page", page);
+        params.set("limit", ITEMS_PER_PAGE);
         const res = await fetch(`/api/products?${params.toString()}`);
         const data = await res.json();
         if (data.success) {
           setProducts(data.products);
+          setTotalProducts(data.total);
         }
       } catch (err) {
         // Products will remain empty
@@ -57,20 +69,33 @@ function ShopContent() {
     };
 
     fetchProducts();
-  }, [search, gender, category]);
+  }, [search, gender, category, priceRange, page]);
 
   const handleGender = (g) => {
     setGender(g);
     setCategory("");
+    setPriceRange("");
+    setPage(1);
   };
 
   const handleCategory = (cat) => {
     setCategory(cat);
+    setPriceRange("");
+    setPage(1);
   };
 
   const handleAll = () => {
     setGender("");
     setCategory("");
+    setPriceRange("");
+    setPage(1);
+  };
+
+  const handlePriceRange = (range) => {
+    setPriceRange(range);
+    setGender("");
+    setCategory("");
+    setPage(1);
   };
 
   const sidebarBtn = (label, active, onClick) => (
@@ -106,15 +131,60 @@ function ShopContent() {
         <h1 className="text-2xl font-bold text-zinc-800 mb-6">All Products</h1>
 
         {/* Mobile: horizontal pills */}
-        <div className="md:hidden flex gap-2 overflow-x-auto pb-4 mb-4 -mx-4 px-4">
-          {pillBtn("All", !gender && !category, handleAll)}
-          {pillBtn("Men", gender === "Men" && !category, () => handleGender("Men"))}
-          {pillBtn("Women", gender === "Women" && !category, () => handleGender("Women"))}
-          {categories.map((cat) => (
-            <span key={cat}>
-              {pillBtn(cat, category === cat, () => handleCategory(cat))}
-            </span>
-          ))}
+        <div className="md:hidden flex gap-2 flex-wrap pb-4 mb-4">
+          {pillBtn("All", !gender && !category && !priceRange, handleAll)}
+          {pillBtn("Affordable", priceRange === "affordable", () => handlePriceRange("affordable"))}
+          {pillBtn("Premium", priceRange === "premium", () => handlePriceRange("premium"))}
+
+          {/* Men dropdown */}
+          <div className="relative flex-shrink-0">
+            <button
+              onClick={() => { setMobileMenOpen(!mobileMenOpen); setMobileWomenOpen(false); }}
+              className={`flex items-center gap-1 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                gender === "Men"
+                  ? "bg-zinc-700 text-white"
+                  : "bg-white text-zinc-600 border border-zinc-300"
+              }`}
+            >
+              Men
+              <svg className={`w-3 h-3 transition-transform ${mobileMenOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {mobileMenOpen && (
+              <div className="absolute top-full left-0 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg z-20 min-w-[140px]">
+                <button onClick={() => { handleGender("Men"); setMobileMenOpen(false); }} className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${gender === "Men" && !category ? "bg-zinc-100 font-medium text-zinc-800" : "text-zinc-600 hover:bg-zinc-50"}`}>All Men</button>
+                {categories.map((cat) => (
+                  <button key={`mob-men-${cat}`} onClick={() => { setGender("Men"); setCategory(cat); setPriceRange(""); setPage(1); setMobileMenOpen(false); }} className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${gender === "Men" && category === cat ? "bg-zinc-100 font-medium text-zinc-800" : "text-zinc-600 hover:bg-zinc-50"}`}>{cat}</button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Women dropdown */}
+          <div className="relative flex-shrink-0">
+            <button
+              onClick={() => { setMobileWomenOpen(!mobileWomenOpen); setMobileMenOpen(false); }}
+              className={`flex items-center gap-1 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                gender === "Women"
+                  ? "bg-zinc-700 text-white"
+                  : "bg-white text-zinc-600 border border-zinc-300"
+              }`}
+            >
+              Women
+              <svg className={`w-3 h-3 transition-transform ${mobileWomenOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {mobileWomenOpen && (
+              <div className="absolute top-full left-0 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg z-20 min-w-[140px]">
+                <button onClick={() => { handleGender("Women"); setMobileWomenOpen(false); }} className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${gender === "Women" && !category ? "bg-zinc-100 font-medium text-zinc-800" : "text-zinc-600 hover:bg-zinc-50"}`}>All Women</button>
+                {categories.map((cat) => (
+                  <button key={`mob-women-${cat}`} onClick={() => { setGender("Women"); setCategory(cat); setPriceRange(""); setPage(1); setMobileWomenOpen(false); }} className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${gender === "Women" && category === cat ? "bg-zinc-100 font-medium text-zinc-800" : "text-zinc-600 hover:bg-zinc-50"}`}>{cat}</button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-8">
@@ -139,7 +209,7 @@ function ShopContent() {
                     {sidebarBtn("All Men", gender === "Men" && !category, () => handleGender("Men"))}
                     {categories.map((cat) => (
                       <span key={`men-${cat}`}>
-                        {sidebarBtn(cat, gender === "Men" && category === cat, () => { setGender("Men"); setCategory(cat); })}
+                        {sidebarBtn(cat, gender === "Men" && category === cat, () => { setGender("Men"); setCategory(cat); setPriceRange(""); setPage(1); })}
                       </span>
                     ))}
                   </div>
@@ -162,36 +232,61 @@ function ShopContent() {
                     {sidebarBtn("All Women", gender === "Women" && !category, () => handleGender("Women"))}
                     {categories.map((cat) => (
                       <span key={`women-${cat}`}>
-                        {sidebarBtn(cat, gender === "Women" && category === cat, () => { setGender("Women"); setCategory(cat); })}
+                        {sidebarBtn(cat, gender === "Women" && category === cat, () => { setGender("Women"); setCategory(cat); setPriceRange(""); setPage(1); })}
                       </span>
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Price range */}
+              <div className="pt-3 border-t border-zinc-200 mt-3">
+                <p className="px-3 py-2 text-sm font-semibold text-zinc-700">Price Range</p>
+                <div className="space-y-0.5">
+                  {sidebarBtn("Affordable", priceRange === "affordable", () => handlePriceRange("affordable"))}
+                  {sidebarBtn("Premium", priceRange === "premium", () => handlePriceRange("premium"))}
+                </div>
               </div>
             </nav>
           </aside>
 
           {/* Right: search + products */}
           <div className="flex-1 min-w-0">
-            <div className="mb-6">
+            <div className="mb-6 flex gap-3">
               <input
                 type="text"
                 placeholder="Search products..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full px-4 py-2 text-base border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                className="flex-1 px-4 py-2 text-base border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
               />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 text-sm border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+              >
+                <option value="">Sort by</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+              </select>
             </div>
 
             {loading ? (
               <p className="text-zinc-500">Loading products...</p>
-            ) : products.length === 0 ? (
-              <div className="bg-white p-8 rounded-lg shadow-md text-center">
-                <p className="text-zinc-500">No products found.</p>
-              </div>
-            ) : (
+            ) : (() => {
+              const totalPages = Math.ceil(totalProducts / ITEMS_PER_PAGE);
+              return products.length === 0 ? (
+                <div className="bg-white p-8 rounded-lg shadow-md text-center">
+                  <p className="text-zinc-500">No products found.</p>
+                </div>
+              ) : (
+              <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map((product) => {
+                {[...products].sort((a, b) => {
+                  if (sortBy === "price-low") return Number(a.price) - Number(b.price);
+                  if (sortBy === "price-high") return Number(b.price) - Number(a.price);
+                  return 0;
+                }).map((product) => {
                   let firstImage = null;
                   if (product.images) {
                     try {
@@ -237,7 +332,52 @@ function ShopContent() {
                   );
                 })}
               </div>
-            )}
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-8">
+                  <button
+                    onClick={() => { setPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    disabled={page === 1}
+                    className="px-3 py-1.5 text-sm text-zinc-800 border border-zinc-300 rounded-md hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Prev
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                    .reduce((acc, p, i, arr) => {
+                      if (i > 0 && p - arr[i - 1] > 1) acc.push("...");
+                      acc.push(p);
+                      return acc;
+                    }, [])
+                    .map((p, i) =>
+                      p === "..." ? (
+                        <span key={`dots-${i}`} className="px-1 text-zinc-400 text-sm">...</span>
+                      ) : (
+                        <button
+                          key={p}
+                          onClick={() => { setPage(p); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                          className={`px-3 py-1.5 text-sm border rounded-md ${
+                            page === p
+                              ? "bg-zinc-700 text-white border-zinc-700"
+                              : "border-zinc-300 text-zinc-800 hover:bg-zinc-50"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      )
+                    )}
+                  <button
+                    onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    disabled={page === totalPages}
+                    className="px-3 py-1.5 text-sm text-zinc-800 border border-zinc-300 rounded-md hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+              </>
+              );
+            })()}
           </div>
         </div>
       </div>

@@ -94,7 +94,7 @@ export default function Home() {
           <img
             key={src}
             src={src}
-            alt={`Fits Theory ${index + 1}`}
+            alt={`Seto ${index + 1}`}
             className={`absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-1000 ${
               currentSlide === index ? "opacity-100" : "opacity-0"
             }`}

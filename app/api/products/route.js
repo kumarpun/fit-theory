@@ -28,11 +28,28 @@ export async function GET(request) {
       params.push(`%${search}%`, `%${search}%`);
     }
 
+    const priceRange = searchParams.get("priceRange");
+    if (priceRange === "affordable") {
+      sql += " AND price < 5000";
+    } else if (priceRange === "premium") {
+      sql += " AND price >= 5000";
+    }
+
+    // Count total before pagination
+    const countSql = sql.replace("SELECT *", "SELECT COUNT(*) as total");
+    const [{ total }] = await query(countSql, params);
+
     sql += " ORDER BY created_at DESC";
+
+    const page = parseInt(searchParams.get("page")) || 1;
+    const limit = parseInt(searchParams.get("limit")) || 0;
+    if (limit > 0) {
+      sql += ` LIMIT ${limit} OFFSET ${(page - 1) * limit}`;
+    }
 
     const products = await query(sql, params);
 
-    return Response.json({ success: true, products });
+    return Response.json({ success: true, products, total, page, limit });
   } catch (error) {
     return Response.json(
       { success: false, message: "Failed to fetch products", error: error.message },

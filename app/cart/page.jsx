@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getUser } from "@/lib/auth-client";
 import { getCart, removeFromCart, updateCartItemQuantity, setCheckoutItems } from "@/lib/cart";
+import { getUser } from "@/lib/auth-client";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
 import LoginModal from "@/app/components/LoginModal";
@@ -15,9 +15,8 @@ export default function CartPage() {
   const router = useRouter();
   const [cart, setCart] = useState([]);
   const [selectedKeys, setSelectedKeys] = useState(new Set());
-  const [deliveryCharge, setDeliveryCharge] = useState(0);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [user, setUser] = useState(null);
+  const [deliveryCharge, setDeliveryCharge] = useState(0);
 
   const toggleSelect = (key) => {
     setSelectedKeys((prev) => {
@@ -36,29 +35,34 @@ export default function CartPage() {
     }
   };
 
-  const handleCheckoutClick = () => {
+  const proceedToCheckout = () => {
     const selected = cart.filter((item) => selectedKeys.has(itemKey(item)));
     setCheckoutItems(selected);
-    if (user) {
-      router.push("/checkout");
-    } else {
-      setShowLoginModal(true);
-    }
+    router.push("/checkout");
   };
 
-  const handleLoginSuccess = () => {
-    setShowLoginModal(false);
-    setUser(getUser());
+  const handleCheckoutClick = () => {
+    if (!getUser()) {
+      setShowLoginModal(true);
+      return;
+    }
+    proceedToCheckout();
   };
 
   useEffect(() => {
-    setUser(getUser());
     const items = getCart().reverse();
     setCart(items);
     // Select the latest item (first after reverse) by default
     if (items.length > 0) {
       setSelectedKeys(new Set([itemKey(items[0])]));
     }
+
+    fetch("/api/settings/delivery-charge")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setDeliveryCharge(data.deliveryCharge);
+      })
+      .catch(() => {});
 
     const handleCartUpdate = () => {
       const updated = getCart().reverse();
@@ -74,21 +78,11 @@ export default function CartPage() {
     };
     window.addEventListener("cart-updated", handleCartUpdate);
 
-    const fetchDeliveryCharge = async () => {
-      try {
-        const res = await fetch("/api/settings/delivery-charge");
-        const data = await res.json();
-        if (data.success) setDeliveryCharge(data.deliveryCharge);
-      } catch (err) {}
-    };
-    fetchDeliveryCharge();
-
     return () => window.removeEventListener("cart-updated", handleCartUpdate);
   }, []);
 
   const selectedItems = cart.filter((item) => selectedKeys.has(itemKey(item)));
   const subtotal = selectedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const grandTotal = subtotal + (selectedItems.length > 0 ? deliveryCharge : 0);
 
   return (
     <div className="min-h-screen bg-zinc-50 flex flex-col">
@@ -259,22 +253,21 @@ export default function CartPage() {
                   </div>
                   <div className="flex justify-between text-sm text-zinc-600">
                     <span>Delivery Charge</span>
-                    <span>रु {selectedItems.length > 0 ? deliveryCharge : 0}</span>
+                    <span>रु {deliveryCharge}</span>
                   </div>
+                  <p className="text-xs text-amber-600 font-medium">* Delivery charge varies based on city</p>
                 </div>
                 <div className="border-t border-zinc-200 mt-3 pt-4">
                   <div className="flex justify-between mb-4">
                     <p className="text-lg font-bold text-zinc-800">Total</p>
-                    <p className="text-lg font-bold text-zinc-800">रु {grandTotal}</p>
+                    <p className="text-lg font-bold text-zinc-800">रु {subtotal + deliveryCharge}</p>
                   </div>
                   <button
                     onClick={handleCheckoutClick}
                     disabled={selectedKeys.size === 0}
                     className="w-full py-3 bg-zinc-700 text-white rounded-md font-medium hover:bg-zinc-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {user
-                      ? `Proceed to Checkout (${selectedKeys.size})`
-                      : "Login to Checkout"}
+                    {getUser() ? `Proceed to Checkout (${selectedKeys.size})` : "Login to Checkout"}
                   </button>
                 </div>
               </div>
@@ -283,10 +276,13 @@ export default function CartPage() {
         )}
       </div>
       <Footer />
+
       {showLoginModal && (
         <LoginModal
           onClose={() => setShowLoginModal(false)}
-          onSuccess={handleLoginSuccess}
+          onSuccess={() => {
+            setShowLoginModal(false);
+          }}
         />
       )}
     </div>

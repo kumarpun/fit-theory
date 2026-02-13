@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { authFetch } from "@/lib/auth-client";
+import ImageLightbox from "@/app/components/ImageLightbox";
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-700",
   confirmed: "bg-blue-100 text-blue-700",
   shipped: "bg-indigo-100 text-indigo-700",
   delivered: "bg-green-100 text-green-700",
+  received: "bg-emerald-100 text-emerald-700",
   cancelled: "bg-red-100 text-red-700",
   returned: "bg-orange-100 text-orange-700",
 };
@@ -24,6 +26,7 @@ export default function AdminOrderDetailPage() {
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState("");
+  const [lightboxImage, setLightboxImage] = useState(null);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -201,6 +204,7 @@ export default function AdminOrderDetailPage() {
             <option value="confirmed">Confirmed</option>
             <option value="shipped">Shipped</option>
             <option value="delivered">Delivered</option>
+            <option value="received">Received</option>
             <option value="cancelled">Cancelled</option>
             <option value="returned">Returned</option>
           </select>
@@ -248,7 +252,8 @@ export default function AdminOrderDetailPage() {
               <img
                 src={order.paymentScreenshot}
                 alt="Payment screenshot"
-                className="max-w-full sm:max-w-md max-h-96 object-contain border border-zinc-200 rounded-md"
+                onClick={() => setLightboxImage(order.paymentScreenshot)}
+                className="max-w-full sm:max-w-md max-h-96 object-contain border border-zinc-200 rounded-md cursor-pointer hover:opacity-80 transition-opacity"
               />
             </div>
           )}
@@ -270,6 +275,14 @@ export default function AdminOrderDetailPage() {
             Return Reason
           </h2>
           <p className="text-sm text-orange-700">{order.returnReason}</p>
+          {order.returnImage && (
+            <img
+              src={order.returnImage}
+              alt="Return evidence"
+              onClick={() => setLightboxImage(order.returnImage)}
+              className="mt-3 max-w-full sm:max-w-md max-h-96 object-contain border border-orange-200 rounded-md cursor-pointer hover:opacity-80 transition-opacity"
+            />
+          )}
         </div>
       )}
 
@@ -332,6 +345,14 @@ export default function AdminOrderDetailPage() {
           ))}
         </div>
       </div>
+
+      {lightboxImage && (
+        <ImageLightbox
+          images={[lightboxImage]}
+          initialIndex={0}
+          onClose={() => setLightboxImage(null)}
+        />
+      )}
     </div>
   );
 }

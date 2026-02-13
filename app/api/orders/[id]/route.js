@@ -60,14 +60,38 @@ export async function PUT(request, { params }) {
       );
     }
 
-    if (order.status !== "delivered") {
+    const { action, returnReason, returnImage } = await request.json();
+
+    // Mark as received
+    if (action === "received") {
+      if (order.status !== "delivered") {
+        return Response.json(
+          { success: false, message: "Only delivered orders can be marked as received" },
+          { status: 400 }
+        );
+      }
+      await Order.update(id, { status: "received", receivedAt: new Date() });
+      return Response.json({ success: true, message: "Order marked as received" });
+    }
+
+    // Request return
+    if (order.status !== "delivered" && order.status !== "received") {
       return Response.json(
-        { success: false, message: "Returns can only be requested for delivered orders" },
+        { success: false, message: "Returns can only be requested for delivered or received orders" },
         { status: 400 }
       );
     }
 
-    const { returnReason } = await request.json();
+    if (order.status === "received" && order.receivedAt) {
+      const receivedTime = new Date(order.receivedAt).getTime();
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      if (Date.now() - receivedTime > oneDayMs) {
+        return Response.json(
+          { success: false, message: "Return window has expired (1 day after receiving)" },
+          { status: 400 }
+        );
+      }
+    }
 
     if (!returnReason || !returnReason.trim()) {
       return Response.json(
@@ -76,7 +100,10 @@ export async function PUT(request, { params }) {
       );
     }
 
-    await Order.update(id, { status: "returned", returnReason });
+    const updateData = { status: "returned", returnReason };
+    if (returnImage) updateData.returnImage = returnImage;
+
+    await Order.update(id, updateData);
 
     return Response.json({ success: true, message: "Return request submitted" });
   } catch (error) {

@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="text-white text-lg font-bold mb-4">Fits Theory</h3>
+            <h3 className="text-white text-lg font-bold mb-4">Seto</h3>
             <p className="text-sm leading-relaxed">
               Enchanting styles for every individuals. Discover your perfect fit with our curated collection.
             </p>
@@ -25,7 +25,7 @@ export default function Footer() {
           <div>
             <h4 className="text-white text-sm font-semibold mb-4">Customer Service</h4>
             <nav className="space-y-2">
-              <Link href="/change-password" className="block text-sm hover:text-white transition-colors">My Account</Link>
+              <Link href="/profile" className="block text-sm hover:text-white transition-colors">My Account</Link>
               <span className="block text-sm">Shipping & Returns</span>
               <span className="block text-sm">Privacy Policy</span>
               <span className="block text-sm">Terms & Conditions</span>
@@ -43,7 +43,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-zinc-800 mt-10 pt-6 text-center text-sm">
-          <p>&copy; {new Date().getFullYear()} Fits Theory. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Seto. All rights reserved.</p>
         </div>
       </div>
     </footer>

@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Fits Theory",
-  description: "Your fits gear destination",
+  title: "Seto",
+  description: "Your style destination",
 };
 
 export const viewport = {

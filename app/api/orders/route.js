@@ -3,6 +3,7 @@ import Product from "@/models/Product";
 import Order from "@/models/Order";
 import OrderItem from "@/models/OrderItem";
 import Setting from "@/models/Setting";
+import User from "@/models/User";
 import { requireAuth } from "@/lib/auth";
 
 export async function GET(request) {
@@ -31,7 +32,7 @@ export async function POST(request) {
     await Order.sync();
     await OrderItem.sync();
 
-    const { items, shippingName, shippingPhone, shippingAddress, shippingCity, shippingState, shippingZip, paymentMethod, paymentScreenshot } =
+    const { items, shippingName, shippingPhone, shippingAddress, shippingCity, shippingState, shippingZip, paymentMethod, paymentScreenshot, deliveryCharge: clientDeliveryCharge } =
       await request.json();
 
     if (!items || items.length === 0) {
@@ -99,9 +100,14 @@ export async function POST(request) {
       });
     }
 
-    // Fetch delivery charge
-    const deliveryChargeSetting = await Setting.findOne({ settingKey: "deliveryCharge" });
-    const deliveryCharge = deliveryChargeSetting ? Number(deliveryChargeSetting.value) : 0;
+    // Use city-specific delivery charge from client, fall back to global setting
+    let deliveryCharge;
+    if (clientDeliveryCharge != null) {
+      deliveryCharge = Number(clientDeliveryCharge);
+    } else {
+      const deliveryChargeSetting = await Setting.findOne({ settingKey: "deliveryCharge" });
+      deliveryCharge = deliveryChargeSetting ? Number(deliveryChargeSetting.value) : 0;
+    }
     const grandTotal = total + deliveryCharge;
 
     // Use transaction for order creation
@@ -155,6 +161,15 @@ export async function POST(request) {
       }
 
       await connection.commit();
+
+      // Save shipping details to user profile
+      User.update(user.id, {
+        phone: shippingPhone || null,
+        address: shippingAddress || null,
+        city: shippingCity || null,
+        state: shippingState || null,
+        zip: shippingZip || null,
+      }).catch(() => {});
 
       return Response.json(
         { success: true, message: "Order placed successfully", orderId },

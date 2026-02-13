@@ -6,7 +6,7 @@ const orderSchema = {
     required: true,
   },
   status: {
-    type: "ENUM('pending', 'confirmed', 'shipped', 'delivered', 'cancelled', 'returned')",
+    type: "ENUM('pending', 'confirmed', 'shipped', 'delivered', 'received', 'cancelled', 'returned')",
     default: "pending",
   },
   total: {
@@ -35,11 +35,19 @@ const orderSchema = {
   shippingZip: {
     type: "VARCHAR(20)",
   },
+  receivedAt: {
+    type: "DATETIME",
+    default: null,
+  },
   cancellationReason: {
     type: "VARCHAR(500)",
   },
   returnReason: {
     type: "VARCHAR(500)",
+  },
+  returnImage: {
+    type: "VARCHAR(500)",
+    default: null,
   },
   paymentMethod: {
     type: "ENUM('cod', 'online')",

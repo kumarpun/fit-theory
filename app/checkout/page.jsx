@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getUser, refreshTokens, authFetch } from "@/lib/auth-client";
 import { getCheckoutItems, clearCheckoutItems, removeItemsFromCart } from "@/lib/cart";
@@ -26,6 +26,21 @@ export default function CheckoutPage() {
   const [paymentScreenshot, setPaymentScreenshot] = useState(null);
   const [screenshotPreview, setScreenshotPreview] = useState("");
   const [deliveryCharge, setDeliveryCharge] = useState(0);
+  const [defaultCharge, setDefaultCharge] = useState(0);
+  const [cities, setCities] = useState([]);
+  const [citySearch, setCitySearch] = useState("");
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const cityRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (cityRef.current && !cityRef.current.contains(e.target)) {
+        setShowCityDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -52,14 +67,47 @@ export default function CheckoutPage() {
     }
     setCart(items);
 
-    const fetchDeliveryCharge = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch("/api/settings/delivery-charge");
-        const data = await res.json();
-        if (data.success) setDeliveryCharge(data.deliveryCharge);
+        const [chargeRes, citiesRes, profileRes] = await Promise.all([
+          fetch("/api/settings/delivery-charge"),
+          fetch("/api/cities"),
+          authFetch("/api/profile"),
+        ]);
+        const chargeData = await chargeRes.json();
+        const citiesData = await citiesRes.json();
+        const profileData = await profileRes.json();
+        if (chargeData.success) {
+          setDefaultCharge(chargeData.deliveryCharge);
+          setDeliveryCharge(chargeData.deliveryCharge);
+        }
+        if (citiesData.success) setCities(citiesData.cities);
+
+        if (profileData.success && profileData.profile) {
+          const p = profileData.profile;
+          if (p.phone || p.address || p.city) {
+            setShipping({
+              name: p.name || "",
+              phone: p.phone || "",
+              address: p.address || "",
+              city: p.city || "",
+              state: p.state || "",
+              zip: p.zip || "",
+            });
+            if (p.city) {
+              setCitySearch(p.city);
+              if (citiesData.success) {
+                const selectedCity = citiesData.cities.find((c) => c.name === p.city);
+                if (selectedCity) {
+                  setDeliveryCharge(Number(selectedCity.deliveryCharge));
+                }
+              }
+            }
+          }
+        }
       } catch (err) {}
     };
-    fetchDeliveryCharge();
+    fetchData();
   }, [authLoading, router]);
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -67,6 +115,13 @@ export default function CheckoutPage() {
 
   const handleChange = (e) => {
     setShipping({ ...shipping, [e.target.name]: e.target.value });
+  };
+
+  const handleCityChange = (e) => {
+    const cityName = e.target.value;
+    setShipping({ ...shipping, city: cityName });
+    const selectedCity = cities.find((c) => c.name === cityName);
+    setDeliveryCharge(selectedCity ? Number(selectedCity.deliveryCharge) : defaultCharge);
   };
 
   const handleScreenshotChange = (e) => {
@@ -127,6 +182,7 @@ export default function CheckoutPage() {
           shippingZip: shipping.zip || null,
           paymentMethod,
           paymentScreenshot: screenshotUrl,
+          deliveryCharge,
         }),
       });
 
@@ -233,11 +289,64 @@ export default function CheckoutPage() {
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div>
-                <label htmlFor="city" className="block text-sm font-medium mb-2 text-zinc-700">
-                  City *
-                </label>
+            <div className="mb-4 relative" ref={cityRef}>
+              <label htmlFor="city" className="block text-sm font-medium mb-2 text-zinc-700">
+                City *
+              </label>
+              {cities.length > 0 ? (
+                <>
+                  <input
+                    type="text"
+                    id="city"
+                    placeholder="Search city..."
+                    value={citySearch}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setCitySearch(val);
+                      setShowCityDropdown(true);
+                      const match = cities.find((c) => c.name.toLowerCase() === val.toLowerCase());
+                      if (match) {
+                        setShipping({ ...shipping, city: match.name });
+                        setDeliveryCharge(Number(match.deliveryCharge));
+                      } else {
+                        setShipping({ ...shipping, city: val });
+                        setDeliveryCharge(defaultCharge);
+                      }
+                    }}
+                    onFocus={() => setShowCityDropdown(true)}
+                    autoComplete="off"
+                    required
+                    className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                  />
+                  {showCityDropdown && (() => {
+                    const filtered = cities.filter((c) =>
+                      c.name.toLowerCase().includes(citySearch.toLowerCase())
+                    );
+                    if (filtered.length === 0) return null;
+                    return (
+                      <div className="absolute z-20 w-full mt-1 bg-white border border-zinc-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                        {filtered.map((city) => (
+                          <button
+                            key={city.id}
+                            type="button"
+                            onClick={() => {
+                              setCitySearch(city.name);
+                              setShipping({ ...shipping, city: city.name });
+                              setDeliveryCharge(Number(city.deliveryCharge));
+                              setShowCityDropdown(false);
+                            }}
+                            className={`w-full text-left px-4 py-2 text-sm hover:bg-zinc-100 ${
+                              shipping.city === city.name ? "bg-zinc-50 font-medium text-zinc-800" : "text-zinc-700"
+                            }`}
+                          >
+                            {city.name}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </>
+              ) : (
                 <input
                   type="text"
                   id="city"
@@ -247,7 +356,10 @@ export default function CheckoutPage() {
                   required
                   className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
                 />
-              </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
                 <label htmlFor="state" className="block text-sm font-medium mb-2 text-zinc-700">
                   State

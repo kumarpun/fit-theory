@@ -34,6 +34,26 @@ const userSchema = {
     type: "DATETIME",
     default: null,
   },
+  phone: {
+    type: "VARCHAR(50)",
+    default: null,
+  },
+  address: {
+    type: "VARCHAR(500)",
+    default: null,
+  },
+  city: {
+    type: "VARCHAR(255)",
+    default: null,
+  },
+  state: {
+    type: "VARCHAR(255)",
+    default: null,
+  },
+  zip: {
+    type: "VARCHAR(20)",
+    default: null,
+  },
 };
 
 const User = new Model("users", userSchema);
