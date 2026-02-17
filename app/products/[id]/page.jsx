@@ -202,9 +202,9 @@ export default function ProductDetailPage() {
             </p>
 
             {product.description && (
-              <p className="text-sm text-zinc-600 mb-6 leading-relaxed">
+              <div className="text-sm text-zinc-600 mb-6 leading-relaxed whitespace-pre-line">
                 {product.description}
-              </p>
+              </div>
             )}
 
             {hasSizes && (
