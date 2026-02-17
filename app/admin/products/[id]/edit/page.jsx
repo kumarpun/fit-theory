@@ -21,6 +21,7 @@ export default function EditProductPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -119,6 +120,14 @@ export default function EditProductPage() {
     } else {
       setImages([""]);
     }
+  };
+
+  const setCoverImage = (index) => {
+    if (index === 0) return;
+    const updated = [...images];
+    const [selected] = updated.splice(index, 1);
+    updated.unshift(selected);
+    setImages(updated);
   };
 
   const handleSizeChange = (index, field, value) => {
@@ -310,9 +319,24 @@ export default function EditProductPage() {
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-2 text-zinc-700">
-            Images (up to 4)
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-zinc-700">
+              Images (up to 4)
+            </label>
+            {images.some((url) => url.trim()) && (
+              <button
+                type="button"
+                onClick={() => setPreviewOpen(true)}
+                className="flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                Preview
+              </button>
+            )}
+          </div>
           {images.map((url, index) => (
             <div key={index} className="flex gap-2 mb-2">
               <input
@@ -454,6 +478,45 @@ export default function EditProductPage() {
           </button>
         </div>
       </form>
+
+      {/* Image Preview Modal */}
+      {previewOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setPreviewOpen(false)}>
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-zinc-200">
+              <h3 className="text-lg font-semibold text-zinc-800">Image Preview</h3>
+              <button onClick={() => setPreviewOpen(false)} className="text-zinc-400 hover:text-zinc-600 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 grid grid-cols-2 gap-4">
+              {images.filter((url) => url.trim()).map((url, index) => (
+                <div key={index} className="relative group">
+                  <img
+                    src={url}
+                    alt={`Product ${index + 1}`}
+                    className={`w-full aspect-square object-cover rounded-lg border-2 ${index === 0 ? "border-zinc-700" : "border-zinc-200"}`}
+                  />
+                  {index === 0 && (
+                    <span className="absolute top-2 left-2 bg-zinc-700 text-white text-xs px-2 py-0.5 rounded">Cover</span>
+                  )}
+                  {index !== 0 && (
+                    <button
+                      type="button"
+                      onClick={() => { setCoverImage(index); }}
+                      className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"
+                    >
+                      <span className="bg-white text-zinc-800 text-xs font-medium px-3 py-1.5 rounded-md shadow">Set as Cover</span>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
