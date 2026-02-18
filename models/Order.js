@@ -60,6 +60,21 @@ const orderSchema = {
     type: "DECIMAL(10,2)",
     default: 0,
   },
+  paidAmount: {
+    type: "DECIMAL(10,2)",
+    default: 0,
+  },
+  paymentStatus: {
+    type: "ENUM('review', 'pre_confirmed', 'full_confirmed')",
+    default: "review",
+  },
+  fullPaymentScreenshot: {
+    type: "VARCHAR(500)",
+  },
+  fullPaymentNotified: {
+    type: "TINYINT(1)",
+    default: 0,
+  },
 };
 
 const Order = new Model("orders", orderSchema);

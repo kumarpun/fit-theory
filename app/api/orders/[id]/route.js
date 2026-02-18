@@ -60,7 +60,21 @@ export async function PUT(request, { params }) {
       );
     }
 
-    const { action, returnReason, returnImage } = await request.json();
+    const { action, returnReason, returnImage, paymentScreenshot } = await request.json();
+
+    // Notify full payment
+    if (action === "notifyFullPayment") {
+      if (order.paymentStatus === "full_confirmed") {
+        return Response.json(
+          { success: false, message: "Full payment is already confirmed" },
+          { status: 400 }
+        );
+      }
+      const updateData = { fullPaymentNotified: 1 };
+      if (paymentScreenshot) updateData.fullPaymentScreenshot = paymentScreenshot;
+      await Order.update(id, updateData);
+      return Response.json({ success: true, message: "Admin has been notified of your full payment" });
+    }
 
     // Mark as received
     if (action === "received") {

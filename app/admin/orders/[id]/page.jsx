@@ -25,6 +25,9 @@ export default function AdminOrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
+  const [editPaidAmount, setEditPaidAmount] = useState("");
+  const [updatingPaidAmount, setUpdatingPaidAmount] = useState(false);
   const [message, setMessage] = useState("");
   const [lightboxImage, setLightboxImage] = useState(null);
 
@@ -37,6 +40,7 @@ export default function AdminOrderDetailPage() {
           setOrder(data.order);
           setItems(data.items);
           setStatus(data.order.status);
+          setEditPaidAmount(String(Number(data.order.paidAmount || 0)));
         }
       } catch (err) {
         // Order will remain null
@@ -99,6 +103,58 @@ export default function AdminOrderDetailPage() {
       alert("Failed to delete order");
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handlePaymentConfirm = async (paymentStatus) => {
+    setConfirmingPayment(true);
+    try {
+      const res = await authFetch(`/api/admin/orders/${params.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentStatus }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const updated = { ...order, paymentStatus };
+        if (paymentStatus === "full_confirmed") {
+          updated.paidAmount = Number(order.total);
+          setEditPaidAmount(String(Number(order.total)));
+          await authFetch(`/api/admin/orders/${params.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paidAmount: Number(order.total) }),
+          });
+        }
+        setOrder(updated);
+      } else {
+        alert(data.message || "Failed to update payment status");
+      }
+    } catch (err) {
+      alert("Failed to update payment status");
+    } finally {
+      setConfirmingPayment(false);
+    }
+  };
+
+  const handlePaidAmountUpdate = async () => {
+    const amount = parseFloat(editPaidAmount);
+    if (isNaN(amount) || amount < 0) return;
+    setUpdatingPaidAmount(true);
+    try {
+      const res = await authFetch(`/api/admin/orders/${params.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paidAmount: amount }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOrder({ ...order, paidAmount: amount });
+      }
+    } catch (err) {
+      // keep current
+    } finally {
+      setUpdatingPaidAmount(false);
     }
   };
 
@@ -239,22 +295,117 @@ export default function AdminOrderDetailPage() {
         <h2 className="text-lg font-semibold text-zinc-800 mb-4">
           Payment Info
         </h2>
-        <div className="space-y-2 text-sm">
+        <div className="space-y-3 text-sm">
           <p>
             <span className="text-zinc-500">Method:</span>{" "}
             <span className={`px-2 py-1 rounded-full text-xs capitalize ${order.paymentMethod === "online" ? "bg-blue-100 text-blue-700" : "bg-zinc-100 text-zinc-700"}`}>
               {order.paymentMethod === "online" ? "Online Payment" : "Cash on Delivery"}
             </span>
           </p>
-          {order.paymentMethod === "online" && order.paymentScreenshot && (
-            <div>
-              <p className="text-zinc-500 mb-2">Payment Screenshot:</p>
-              <img
-                src={order.paymentScreenshot}
-                alt="Payment screenshot"
-                onClick={() => setLightboxImage(order.paymentScreenshot)}
-                className="max-w-full sm:max-w-md max-h-96 object-contain border border-zinc-200 rounded-md cursor-pointer hover:opacity-80 transition-opacity"
+          <div className="pt-1">
+            <label className="text-zinc-500 text-sm block mb-1">Amount Paid (रु):</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={editPaidAmount}
+                onChange={(e) => setEditPaidAmount(e.target.value)}
+                min="0"
+                step="0.01"
+                className="w-36 px-3 py-1.5 border border-zinc-300 rounded-md bg-white text-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
               />
+              <button
+                onClick={handlePaidAmountUpdate}
+                disabled={updatingPaidAmount || Number(editPaidAmount) === Number(order.paidAmount || 0)}
+                className="px-3 py-1.5 bg-zinc-700 text-white rounded-md text-xs font-medium hover:bg-zinc-600 transition-colors disabled:opacity-50"
+              >
+                {updatingPaidAmount ? "Saving..." : "Update"}
+              </button>
+            </div>
+          </div>
+          {Number(order.paidAmount || 0) > 0 && (
+            <p>
+              <span className="text-zinc-500">Remaining:</span>{" "}
+              <span className="text-red-600 font-semibold">
+                रु {Math.max(0, Number(order.total) - Number(order.paidAmount))}
+              </span>
+            </p>
+          )}
+          <p>
+            <span className="text-zinc-500">Payment Status:</span>{" "}
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              order.paymentStatus === "full_confirmed" ? "bg-green-100 text-green-700" :
+              order.paymentStatus === "pre_confirmed" ? "bg-blue-100 text-blue-700" :
+              "bg-yellow-100 text-yellow-700"
+            }`}>
+              {order.paymentStatus === "full_confirmed" ? "Full Payment Confirmed" :
+               order.paymentStatus === "pre_confirmed" ? "Pre-Payment Confirmed" :
+               "In Review"}
+            </span>
+          </p>
+
+          {order.fullPaymentNotified === 1 && order.paymentStatus !== "full_confirmed" && (
+            <div className="bg-green-50 border border-green-200 rounded-md px-3 py-2 flex items-center gap-2">
+              <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              <span className="text-sm font-medium text-green-700">Customer has notified full payment completion</span>
+            </div>
+          )}
+
+          {/* Confirm payment buttons */}
+          <div className="flex flex-wrap gap-2 pt-2">
+            {order.paymentStatus !== "pre_confirmed" && order.paymentStatus !== "full_confirmed" && (
+              <button
+                onClick={() => handlePaymentConfirm("pre_confirmed")}
+                disabled={confirmingPayment}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {confirmingPayment ? "Updating..." : "Confirm Pre-Payment"}
+              </button>
+            )}
+            {order.paymentStatus !== "full_confirmed" && (
+              <button
+                onClick={() => handlePaymentConfirm("full_confirmed")}
+                disabled={confirmingPayment}
+                className="px-4 py-2 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+              >
+                {confirmingPayment ? "Updating..." : "Confirm Full Payment"}
+              </button>
+            )}
+            {order.paymentStatus !== "review" && (
+              <button
+                onClick={() => handlePaymentConfirm("review")}
+                disabled={confirmingPayment}
+                className="px-4 py-2 border border-zinc-300 text-zinc-700 rounded-md text-xs font-medium hover:bg-zinc-50 transition-colors disabled:opacity-50"
+              >
+                {confirmingPayment ? "Updating..." : "Reset to Review"}
+              </button>
+            )}
+          </div>
+          {(order.paymentScreenshot || order.fullPaymentScreenshot) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              {order.paymentScreenshot && (
+                <div>
+                  <p className="text-zinc-500 mb-2">Pre-Payment Screenshot:</p>
+                  <img
+                    src={order.paymentScreenshot}
+                    alt="Pre-payment screenshot"
+                    onClick={() => setLightboxImage(order.paymentScreenshot)}
+                    className="w-full max-h-72 object-contain border border-zinc-200 rounded-md cursor-pointer hover:opacity-80 transition-opacity"
+                  />
+                </div>
+              )}
+              {order.fullPaymentScreenshot && (
+                <div>
+                  <p className="text-zinc-500 mb-2">Full Payment Screenshot:</p>
+                  <img
+                    src={order.fullPaymentScreenshot}
+                    alt="Full payment screenshot"
+                    onClick={() => setLightboxImage(order.fullPaymentScreenshot)}
+                    className="w-full max-h-72 object-contain border border-zinc-200 rounded-md cursor-pointer hover:opacity-80 transition-opacity"
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -48,8 +48,51 @@ export async function PUT(request, { params }) {
     if (error) return error;
 
     const { id } = await params;
-    const { status, cancellationReason } = await request.json();
+    const { status, cancellationReason, paymentStatus, paidAmount } = await request.json();
 
+    const existing = await Order.findById(id);
+    if (!existing) {
+      return Response.json(
+        { success: false, message: "Order not found" },
+        { status: 404 }
+      );
+    }
+
+    // Handle paid amount update
+    if (paidAmount !== undefined && paidAmount !== null) {
+      const amount = Number(paidAmount);
+      if (isNaN(amount) || amount < 0) {
+        return Response.json(
+          { success: false, message: "Invalid paid amount" },
+          { status: 400 }
+        );
+      }
+      const order = await Order.update(id, { paidAmount: amount });
+      return Response.json({
+        success: true,
+        message: "Paid amount updated",
+        order,
+      });
+    }
+
+    // Handle payment status confirmation
+    if (paymentStatus) {
+      const validPaymentStatuses = ["review", "pre_confirmed", "full_confirmed"];
+      if (!validPaymentStatuses.includes(paymentStatus)) {
+        return Response.json(
+          { success: false, message: "Invalid payment status" },
+          { status: 400 }
+        );
+      }
+      const order = await Order.update(id, { paymentStatus });
+      return Response.json({
+        success: true,
+        message: "Payment status updated",
+        order,
+      });
+    }
+
+    // Handle order status update
     const validStatuses = ["pending", "confirmed", "shipped", "delivered", "received", "cancelled", "returned"];
     if (!validStatuses.includes(status)) {
       return Response.json(
@@ -62,14 +105,6 @@ export async function PUT(request, { params }) {
       return Response.json(
         { success: false, message: "Cancellation reason is required" },
         { status: 400 }
-      );
-    }
-
-    const existing = await Order.findById(id);
-    if (!existing) {
-      return Response.json(
-        { success: false, message: "Order not found" },
-        { status: 404 }
       );
     }
 

@@ -29,21 +29,34 @@ export async function PUT(request) {
     if (error) return error;
 
     await Setting.sync();
-    const { deliveryCharge } = await request.json();
+    const { deliveryCharge, codEnabled } = await request.json();
 
-    if (deliveryCharge === undefined || deliveryCharge === null || isNaN(Number(deliveryCharge)) || Number(deliveryCharge) < 0) {
-      return Response.json(
-        { success: false, message: "Valid delivery charge amount is required" },
-        { status: 400 }
-      );
+    // Update COD setting if provided
+    if (codEnabled !== undefined) {
+      const codVal = codEnabled ? "1" : "0";
+      const existingCod = await Setting.findOne({ settingKey: "codEnabled" });
+      if (existingCod) {
+        await Setting.update(existingCod.id, { value: codVal });
+      } else {
+        await Setting.create({ settingKey: "codEnabled", value: codVal });
+      }
     }
 
-    const existing = await Setting.findOne({ settingKey: "deliveryCharge" });
+    // Update delivery charge if provided
+    if (deliveryCharge !== undefined && deliveryCharge !== null) {
+      if (isNaN(Number(deliveryCharge)) || Number(deliveryCharge) < 0) {
+        return Response.json(
+          { success: false, message: "Valid delivery charge amount is required" },
+          { status: 400 }
+        );
+      }
 
-    if (existing) {
-      await Setting.update(existing.id, { value: String(Number(deliveryCharge).toFixed(2)) });
-    } else {
-      await Setting.create({ settingKey: "deliveryCharge", value: String(Number(deliveryCharge).toFixed(2)) });
+      const existing = await Setting.findOne({ settingKey: "deliveryCharge" });
+      if (existing) {
+        await Setting.update(existing.id, { value: String(Number(deliveryCharge).toFixed(2)) });
+      } else {
+        await Setting.create({ settingKey: "deliveryCharge", value: String(Number(deliveryCharge).toFixed(2)) });
+      }
     }
 
     return Response.json({ success: true, message: "Settings updated successfully" });

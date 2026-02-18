@@ -101,7 +101,18 @@ export default function CartPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <>
+            {/* Pre-order banner for international orders */}
+            <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6 flex items-start gap-3">
+              <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+              </svg>
+              <p className="text-sm text-amber-800">
+                <span className="font-semibold">Pre-Order Notice:</span> Most of our products are imported from outside Nepal. A <span className="font-semibold">30% advance payment</span> of the total product price is required to confirm your pre-order.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Cart items */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -272,7 +283,8 @@ export default function CartPage() {
                 </div>
               </div>
             </div>
-          </div>
+            </div>
+          </>
         )}
       </div>
       <Footer />

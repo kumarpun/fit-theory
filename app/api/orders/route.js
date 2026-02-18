@@ -13,8 +13,9 @@ export async function GET(request) {
 
     await Order.sync();
     const orders = await Order.findAll({ userId: user.id });
+    const shippedCount = orders.filter((o) => o.status === "shipped" && o.paymentStatus !== "full_confirmed").length;
 
-    return Response.json({ success: true, orders });
+    return Response.json({ success: true, orders, shippedCount });
   } catch (error) {
     return Response.json(
       { success: false, message: "Failed to fetch orders", error: error.message },
@@ -32,7 +33,7 @@ export async function POST(request) {
     await Order.sync();
     await OrderItem.sync();
 
-    const { items, shippingName, shippingPhone, shippingAddress, shippingCity, shippingState, shippingZip, paymentMethod, paymentScreenshot, deliveryCharge: clientDeliveryCharge } =
+    const { items, shippingName, shippingPhone, shippingAddress, shippingCity, shippingState, shippingZip, paymentMethod, paymentScreenshot, deliveryCharge: clientDeliveryCharge, paidAmount: clientPaidAmount } =
       await request.json();
 
     if (!items || items.length === 0) {
@@ -116,10 +117,11 @@ export async function POST(request) {
       await connection.beginTransaction();
 
       // Create order
+      const paidAmount = clientPaidAmount ? Number(clientPaidAmount) : 0;
       const [orderResult] = await connection.execute(
-        `INSERT INTO orders (userId, status, total, deliveryCharge, shippingName, shippingPhone, shippingAddress, shippingCity, shippingState, shippingZip, paymentMethod, paymentScreenshot)
-         VALUES (?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [user.id, grandTotal.toFixed(2), deliveryCharge.toFixed(2), shippingName, shippingPhone, shippingAddress, shippingCity, shippingState || null, shippingZip || null, paymentMethod || "cod", paymentMethod === "online" ? paymentScreenshot : null]
+        `INSERT INTO orders (userId, status, total, deliveryCharge, paidAmount, shippingName, shippingPhone, shippingAddress, shippingCity, shippingState, shippingZip, paymentMethod, paymentScreenshot)
+         VALUES (?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [user.id, grandTotal.toFixed(2), deliveryCharge.toFixed(2), paidAmount.toFixed(2), shippingName, shippingPhone, shippingAddress, shippingCity, shippingState || null, shippingZip || null, paymentMethod || "cod", paymentMethod === "online" ? paymentScreenshot : null]
       );
       const orderId = orderResult.insertId;
 

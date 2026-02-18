@@ -46,7 +46,7 @@ export default function OrdersPage() {
       try {
         const res = await authFetch("/api/orders");
         const data = await res.json();
-        if (data.success) setOrders(data.orders);
+        if (data.success) setOrders(data.orders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
       } catch (err) {
         // Orders will remain empty
       } finally {
@@ -70,6 +70,17 @@ export default function OrdersPage() {
       <Navbar />
       <div className="max-w-4xl mx-auto px-4 py-8 flex-1 w-full">
         <h1 className="text-2xl font-bold text-zinc-800 mb-6">Your Orders</h1>
+
+        {!loading && orders.some((o) => o.status === "shipped" && o.paymentStatus !== "full_confirmed") && (
+          <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-3 mb-6 flex items-start gap-3">
+            <svg className="w-5 h-5 text-indigo-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm text-indigo-800">
+              <span className="font-semibold">Your order has arrived!</span> Please pay the remaining amount before delivery proceeds.
+            </p>
+          </div>
+        )}
 
         {loading ? (
           <p className="text-zinc-500">Loading orders...</p>

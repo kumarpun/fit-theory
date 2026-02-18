@@ -33,6 +33,9 @@ export default function OrderDetailPage() {
   const [returnImageData, setReturnImageData] = useState(null);
   const [returnImagePreview, setReturnImagePreview] = useState("");
   const [lightboxImage, setLightboxImage] = useState(null);
+  const [notifyingPayment, setNotifyingPayment] = useState(false);
+  const [paymentScreenshotData, setPaymentScreenshotData] = useState(null);
+  const [paymentScreenshotPreview, setPaymentScreenshotPreview] = useState("");
 
   useEffect(() => {
     const initAuth = async () => {
@@ -159,6 +162,55 @@ export default function OrderDetailPage() {
       alert("Failed to mark as received");
     } finally {
       setMarkingReceived(false);
+    }
+  };
+
+  const handlePaymentScreenshotChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPaymentScreenshotData(reader.result);
+      setPaymentScreenshotPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleNotifyFullPayment = async () => {
+    if (!paymentScreenshotData) {
+      alert("Please upload a payment screenshot");
+      return;
+    }
+    setNotifyingPayment(true);
+    try {
+      const uploadRes = await authFetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: paymentScreenshotData }),
+      });
+      const uploadData = await uploadRes.json();
+      if (!uploadData.success) {
+        alert("Failed to upload screenshot");
+        return;
+      }
+
+      const res = await authFetch(`/api/orders/${params.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "notifyFullPayment", paymentScreenshot: uploadData.url }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOrder({ ...order, fullPaymentNotified: 1, fullPaymentScreenshot: uploadData.url });
+        setPaymentScreenshotData(null);
+        setPaymentScreenshotPreview("");
+      } else {
+        alert(data.message || "Failed to notify");
+      }
+    } catch (err) {
+      alert("Failed to notify");
+    } finally {
+      setNotifyingPayment(false);
     }
   };
 
@@ -325,7 +377,7 @@ export default function OrderDetailPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 items-start">
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-sm font-semibold text-zinc-800 mb-3">
               Order Info
@@ -365,7 +417,90 @@ export default function OrderDetailPage() {
                   {order.paymentMethod === "online" ? "Online Payment" : "Cash on Delivery"}
                 </span>
               </p>
+              {Number(order.paidAmount || 0) > 0 && (
+                <>
+                  {order.paymentStatus === "pre_confirmed" || order.paymentStatus === "full_confirmed" ? (
+                    <>
+                      <p>
+                        <span className="text-zinc-500">Paid:</span>{" "}
+                        <span className="text-green-700 font-semibold">रु {Number(order.paidAmount)}</span>
+                      </p>
+                      <p>
+                        <span className="text-zinc-500">Remaining:</span>{" "}
+                        <span className="text-red-600 font-semibold">
+                          रु {Math.max(0, Number(order.total) - Number(order.paidAmount))}
+                        </span>
+                      </p>
+                      <p>
+                        <span className="text-zinc-500">Payment:</span>{" "}
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          order.paymentStatus === "full_confirmed" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+                        }`}>
+                          {order.paymentStatus === "full_confirmed" ? "Full Payment Confirmed" : "Pre-Payment Confirmed"}
+                        </span>
+                      </p>
+                    </>
+                  ) : (
+                    <p>
+                      <span className="text-zinc-500">Payment:</span>{" "}
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                        In Review
+                      </span>
+                    </p>
+                  )}
+                </>
+              )}
             </div>
+            {order.paymentStatus !== "full_confirmed" && (
+              <div className="mt-4 p-4 bg-zinc-50 border border-zinc-200 rounded-md">
+                <p className="text-sm text-zinc-600 mb-3">Scan the QR code below to make payment:</p>
+                <img
+                  src="/qqr.jpg"
+                  alt="Payment QR Code"
+                  className="w-48 h-48 mx-auto object-contain border border-zinc-200 rounded-md"
+                />
+                {order.fullPaymentNotified ? (
+                  <div className="mt-4 space-y-2 text-sm">
+                    <p>
+                      <span className="text-zinc-500">Paid:</span>{" "}
+                      <span className="text-green-700 font-semibold">रु {Number(order.total)}</span>
+                    </p>
+                    <p>
+                      <span className="text-zinc-500">Full Payment:</span>{" "}
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                        In Review
+                      </span>
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium mb-2 text-zinc-700">
+                      Upload Payment Screenshot *
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePaymentScreenshotChange}
+                      className="w-full text-sm text-zinc-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-zinc-100 file:text-zinc-700 hover:file:bg-zinc-200"
+                    />
+                    {paymentScreenshotPreview && (
+                      <img
+                        src={paymentScreenshotPreview}
+                        alt="Payment screenshot preview"
+                        className="mt-3 w-full max-h-48 object-contain border border-zinc-200 rounded-md"
+                      />
+                    )}
+                    <button
+                      onClick={handleNotifyFullPayment}
+                      disabled={notifyingPayment || !paymentScreenshotData}
+                      className="mt-3 w-full px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+                    >
+                      {notifyingPayment ? "Submitting..." : "Submit Full Payment"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-md">

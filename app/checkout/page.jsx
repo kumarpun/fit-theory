@@ -23,10 +23,12 @@ export default function CheckoutPage() {
     zip: "",
   });
   const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [paidAmount, setPaidAmount] = useState("");
   const [paymentScreenshot, setPaymentScreenshot] = useState(null);
   const [screenshotPreview, setScreenshotPreview] = useState("");
   const [deliveryCharge, setDeliveryCharge] = useState(0);
   const [defaultCharge, setDefaultCharge] = useState(0);
+  const [codEnabled, setCodEnabled] = useState(true);
   const [cities, setCities] = useState([]);
   const [citySearch, setCitySearch] = useState("");
   const [showCityDropdown, setShowCityDropdown] = useState(false);
@@ -80,6 +82,10 @@ export default function CheckoutPage() {
         if (chargeData.success) {
           setDefaultCharge(chargeData.deliveryCharge);
           setDeliveryCharge(chargeData.deliveryCharge);
+          if (chargeData.codEnabled === false) {
+            setCodEnabled(false);
+            setPaymentMethod("online");
+          }
         }
         if (citiesData.success) setCities(citiesData.cities);
 
@@ -112,6 +118,7 @@ export default function CheckoutPage() {
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const grandTotal = subtotal + deliveryCharge;
+  const minAdvance = Math.ceil(subtotal * 0.3);
 
   const handleChange = (e) => {
     setShipping({ ...shipping, [e.target.name]: e.target.value });
@@ -183,6 +190,7 @@ export default function CheckoutPage() {
           paymentMethod,
           paymentScreenshot: screenshotUrl,
           deliveryCharge,
+          paidAmount: paidAmount ? parseFloat(paidAmount) : 0,
         }),
       });
 
@@ -393,17 +401,19 @@ export default function CheckoutPage() {
             </h2>
 
             <div className="flex gap-4 mb-4">
-              <label className={`flex-1 flex items-center gap-3 p-4 border rounded-md cursor-pointer transition-colors ${paymentMethod === "cod" ? "border-zinc-700 bg-zinc-50" : "border-zinc-300"}`}>
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="cod"
-                  checked={paymentMethod === "cod"}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="accent-zinc-700"
-                />
-                <span className="text-sm font-medium text-zinc-800">Cash on Delivery</span>
-              </label>
+              {codEnabled && (
+                <label className={`flex-1 flex items-center gap-3 p-4 border rounded-md cursor-pointer transition-colors ${paymentMethod === "cod" ? "border-zinc-700 bg-zinc-50" : "border-zinc-300"}`}>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="cod"
+                    checked={paymentMethod === "cod"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="accent-zinc-700"
+                  />
+                  <span className="text-sm font-medium text-zinc-800">Cash on Delivery</span>
+                </label>
+              )}
               <label className={`flex-1 flex items-center gap-3 p-4 border rounded-md cursor-pointer transition-colors ${paymentMethod === "online" ? "border-zinc-700 bg-zinc-50" : "border-zinc-300"}`}>
                 <input
                   type="radio"
@@ -445,6 +455,27 @@ export default function CheckoutPage() {
                 )}
               </div>
             )}
+
+            <div className="mb-6">
+              <label htmlFor="paidAmount" className="block text-sm font-medium mb-2 text-zinc-700">
+                Amount You Are Paying (रु)
+              </label>
+              <input
+                type="number"
+                id="paidAmount"
+                value={paidAmount}
+                onChange={(e) => setPaidAmount(e.target.value)}
+                placeholder={`Min रु ${minAdvance} (30% advance)`}
+                min="0"
+                step="0.01"
+                className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+              />
+              {paidAmount && Number(paidAmount) > 0 && (
+                <p className="mt-1 text-xs text-zinc-500">
+                  Remaining balance: रु {Math.max(0, grandTotal - Number(paidAmount))}
+                </p>
+              )}
+            </div>
 
             <button
               type="submit"
@@ -494,6 +525,13 @@ export default function CheckoutPage() {
                 <p className="text-lg font-bold text-zinc-800">Total</p>
                 <p className="text-lg font-bold text-zinc-800">
                   रु {grandTotal}
+                </p>
+              </div>
+
+              {/* Pre-order advance banner */}
+              <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                <p className="text-sm text-amber-800">
+                  <span className="font-semibold">Pre-Order:</span> You need to pay at least <span className="font-semibold">रु {minAdvance}</span> (30% of product price) to confirm your pre-order.
                 </p>
               </div>
             </div>
