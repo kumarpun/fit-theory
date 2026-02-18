@@ -29,6 +29,8 @@ export default function CheckoutPage() {
   const [deliveryCharge, setDeliveryCharge] = useState(0);
   const [defaultCharge, setDefaultCharge] = useState(0);
   const [codEnabled, setCodEnabled] = useState(true);
+  const [prePaymentEnabled, setPrePaymentEnabled] = useState(null);
+  const [prePaymentPercent, setPrePaymentPercent] = useState(30);
   const [cities, setCities] = useState([]);
   const [citySearch, setCitySearch] = useState("");
   const [showCityDropdown, setShowCityDropdown] = useState(false);
@@ -86,6 +88,10 @@ export default function CheckoutPage() {
             setCodEnabled(false);
             setPaymentMethod("online");
           }
+          setPrePaymentEnabled(chargeData.prePaymentEnabled !== false);
+          if (chargeData.prePaymentPercent !== undefined) {
+            setPrePaymentPercent(chargeData.prePaymentPercent);
+          }
         }
         if (citiesData.success) setCities(citiesData.cities);
 
@@ -118,7 +124,7 @@ export default function CheckoutPage() {
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const grandTotal = subtotal + deliveryCharge;
-  const minAdvance = Math.ceil(subtotal * 0.3);
+  const minAdvance = Math.ceil(subtotal * (prePaymentPercent / 100));
 
   const handleChange = (e) => {
     setShipping({ ...shipping, [e.target.name]: e.target.value });
@@ -465,7 +471,7 @@ export default function CheckoutPage() {
                 id="paidAmount"
                 value={paidAmount}
                 onChange={(e) => setPaidAmount(e.target.value)}
-                placeholder={`Min रु ${minAdvance} (30% advance)`}
+                placeholder={prePaymentEnabled === null || prePaymentEnabled ? `Min रु ${minAdvance} (${prePaymentPercent}% advance)` : "Enter amount"}
                 min="0"
                 step="0.01"
                 className="w-full px-4 py-2 border border-zinc-300 rounded-md bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
@@ -491,21 +497,21 @@ export default function CheckoutPage() {
               <h2 className="text-lg font-semibold text-zinc-800 mb-4">
                 Order Summary
               </h2>
-              <div className="space-y-3">
+              <div className="divide-y divide-zinc-100">
                 {cart.map((item) => (
                   <div
                     key={`${item.productId}-${item.size}-${item.color}`}
-                    className="flex justify-between text-sm"
+                    className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0"
                   >
-                    <div>
-                      <p className="text-zinc-800">{item.name}</p>
-                      <p className="text-zinc-500 text-xs">
-                        Qty: {item.quantity}
-                        {item.color ? ` · Color: ${item.color}` : ""}
-                        {item.size ? ` · Size: ${item.size}` : ""}
-                      </p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-zinc-800 font-medium truncate">{item.name}</p>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+                        <span className="text-xs text-zinc-500">Qty: {item.quantity}</span>
+                        {item.size && <span className="text-xs text-zinc-500">· Size: {item.size}</span>}
+                        {item.color && <span className="text-xs text-zinc-500">· {item.color}</span>}
+                      </div>
                     </div>
-                    <p className="text-zinc-800 font-medium">
+                    <p className="text-sm text-zinc-800 font-medium whitespace-nowrap shrink-0">
                       रु {(item.price * item.quantity)}
                     </p>
                   </div>
@@ -529,11 +535,20 @@ export default function CheckoutPage() {
               </div>
 
               {/* Pre-order advance banner */}
-              <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-                <p className="text-sm text-amber-800">
-                  <span className="font-semibold">Pre-Order:</span> You need to pay at least <span className="font-semibold">रु {minAdvance}</span> (30% of product price) to confirm your pre-order.
-                </p>
-              </div>
+              {prePaymentEnabled === null ? (
+                <div className="mt-4 flex items-center justify-center py-3">
+                  <svg className="w-5 h-5 text-zinc-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                </div>
+              ) : prePaymentEnabled ? (
+                <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                  <p className="text-sm text-amber-800">
+                    <span className="font-semibold">Pre-Order:</span> You need to pay at least <span className="font-semibold">रु {minAdvance}</span> ({prePaymentPercent}% of product price) to confirm your pre-order.
+                  </p>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

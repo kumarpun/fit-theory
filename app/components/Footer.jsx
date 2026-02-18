@@ -35,9 +35,9 @@ export default function Footer() {
           <div>
             <h4 className="text-white text-sm font-semibold mb-4">Contact Us</h4>
             <div className="space-y-2 text-sm">
-              <p>support@fitstheory.com</p>
+              <p>cumarpun1234@gmail.com</p>
               <p>+977 9800000000</p>
-              <p>Kathmandu, Nepal</p>
+              <p>Butwal, Nepal</p>
             </div>
           </div>
         </div>

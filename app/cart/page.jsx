@@ -17,6 +17,8 @@ export default function CartPage() {
   const [selectedKeys, setSelectedKeys] = useState(new Set());
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [deliveryCharge, setDeliveryCharge] = useState(0);
+  const [prePaymentEnabled, setPrePaymentEnabled] = useState(null);
+  const [prePaymentPercent, setPrePaymentPercent] = useState(30);
 
   const toggleSelect = (key) => {
     setSelectedKeys((prev) => {
@@ -60,9 +62,15 @@ export default function CartPage() {
     fetch("/api/settings/delivery-charge")
       .then((res) => res.json())
       .then((data) => {
-        if (data.success) setDeliveryCharge(data.deliveryCharge);
+        if (data.success) {
+          setDeliveryCharge(data.deliveryCharge);
+          setPrePaymentEnabled(data.prePaymentEnabled !== false);
+          if (data.prePaymentPercent !== undefined) setPrePaymentPercent(data.prePaymentPercent);
+        } else {
+          setPrePaymentEnabled(true);
+        }
       })
-      .catch(() => {});
+      .catch(() => { setPrePaymentEnabled(true); });
 
     const handleCartUpdate = () => {
       const updated = getCart().reverse();
@@ -103,14 +111,23 @@ export default function CartPage() {
         ) : (
           <>
             {/* Pre-order banner for international orders */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6 flex items-start gap-3">
-              <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
-              </svg>
-              <p className="text-sm text-amber-800">
-                <span className="font-semibold">Pre-Order Notice:</span> Most of our products are imported from outside Nepal. A <span className="font-semibold">30% advance payment</span> of the total product price is required to confirm your pre-order.
-              </p>
-            </div>
+            {prePaymentEnabled === null ? (
+              <div className="mb-6 flex items-center justify-center py-3">
+                <svg className="w-5 h-5 text-zinc-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              </div>
+            ) : prePaymentEnabled ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6 flex items-start gap-3">
+                <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+                </svg>
+                <p className="text-sm text-amber-800">
+                  <span className="font-semibold">Pre-Order Notice:</span> Most of our products are imported from outside Nepal. A <span className="font-semibold">{prePaymentPercent}% advance payment</span> of the total product price is required to confirm your pre-order.
+                </p>
+              </div>
+            ) : null}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Cart items */}

@@ -29,7 +29,7 @@ export async function PUT(request) {
     if (error) return error;
 
     await Setting.sync();
-    const { deliveryCharge, codEnabled } = await request.json();
+    const { deliveryCharge, codEnabled, prePaymentEnabled, prePaymentPercent } = await request.json();
 
     // Update COD setting if provided
     if (codEnabled !== undefined) {
@@ -39,6 +39,29 @@ export async function PUT(request) {
         await Setting.update(existingCod.id, { value: codVal });
       } else {
         await Setting.create({ settingKey: "codEnabled", value: codVal });
+      }
+    }
+
+    // Update pre-payment settings if provided
+    if (prePaymentEnabled !== undefined) {
+      const val = prePaymentEnabled ? "1" : "0";
+      const existing = await Setting.findOne({ settingKey: "prePaymentEnabled" });
+      if (existing) {
+        await Setting.update(existing.id, { value: val });
+      } else {
+        await Setting.create({ settingKey: "prePaymentEnabled", value: val });
+      }
+    }
+
+    if (prePaymentPercent !== undefined && prePaymentPercent !== null) {
+      const pct = Number(prePaymentPercent);
+      if (!isNaN(pct) && pct >= 0 && pct <= 100) {
+        const existing = await Setting.findOne({ settingKey: "prePaymentPercent" });
+        if (existing) {
+          await Setting.update(existing.id, { value: String(pct) });
+        } else {
+          await Setting.create({ settingKey: "prePaymentPercent", value: String(pct) });
+        }
       }
     }
 

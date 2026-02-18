@@ -24,8 +24,8 @@ export async function GET(request) {
     }
 
     if (search) {
-      sql += " AND (name LIKE ? OR description LIKE ?)";
-      params.push(`%${search}%`, `%${search}%`);
+      sql += " AND (LOWER(name) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?) OR LOWER(category) LIKE LOWER(?))";
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     const priceRange = searchParams.get("priceRange");
